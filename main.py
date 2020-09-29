@@ -15,3 +15,5 @@ if __name__ == '__main__':
 print("Eaze")
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
 print("hello aid")
+#print("mazafaka")
+print("push pls")
