@@ -14,9 +14,3 @@ if __name__ == '__main__':
     print_hi('PyCharm')
 print("Eaze")
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
-print("hello aid")
-print("write shit")
-print("eshe hui")
-print("final shit")
-print("final final")
-print("last final end")
