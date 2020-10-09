@@ -21,4 +21,7 @@ def message_all(msg):
     user_id = msg.chat.id
     bot.send_message(user_id, f"Вы написали {message}")
 
+
+
+
 bot.polling()

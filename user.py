@@ -1,8 +1,14 @@
-import sqlite3
+import psycopg2
 
 class User:
     def __init__(self):
-        self.connect = sqlite3.connect("C:\Users\Ефимов Данила\yusufBotApplication.mdf",check_same_thread=False)
+        self.connect = psycopg2.connect(
+            database = "UserInfo",
+            user = "postgres",
+            password = "zifumu06",
+            host = "127.0.0.1",
+            port = "5432"
+        )
 
 # Получаем id всех пользователей
     def get_all_id(self):
