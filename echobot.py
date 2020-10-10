@@ -19,7 +19,7 @@ def set_welcome(message):
 def message_all(msg):
     message = msg.text
     user_id = msg.chat.id
-    bot.send_message(user_id, f"Вы написали {message}")
+    bot.send_message(user_id, f"Вы написали ахахах {message}")
 
 
 
