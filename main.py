@@ -20,12 +20,12 @@ async def scheduled(wait_for):
     while True:
         await asyncio.sleep(wait_for)
         subscribtions = db.get_subscriptions()
-        for s in subscribtions:
-            await bot.send_message(s[1],
-                f"Курс доллара к рублю {get_exrate()}\nУдачного дня☺")
+        # for s in subscribtions:
+        await bot.send_message(config.admin_id,
+                               f"Курс доллара к рублю {get_exrate()}\nУдачного дня☺")
 
 #execute polling
 if __name__=='__main__':
     from handlers import dp,send_to_admin
-    dp.loop.create_task(scheduled(10))
+    dp.loop.create_task(scheduled(9000))
     executor.start_polling(dp,skip_updates=True,on_startup=send_to_admin)

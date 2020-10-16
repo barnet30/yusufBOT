@@ -31,11 +31,15 @@ async def subscribe(message: Message):
 
 @dp.message_handler(content_types=["text"])
 async def handle_text(message):
-    if message.text == "Hi":
-        await message.answer("Hello! I am YusufBot. YOU SO. How can i help you?")
+    if "привет" in message.text.lower() or "ку " in message.text.lower():
+        await message.answer("Привет, Я ЮсуфБот!, я могу сообщать о курсе доллара)")
 
-    elif message.text == "How are you?" or message.text == "How are u?":
-        await message.answer("I'm fine, thanks. And you?♥")
-
+    elif "как дела" in message.text.lower() or "как жизнь" in message.text.lower() :
+        await message.answer("У меня всё отлично, виртуально радаюсь жизни, а у тебя как? ☺")
+    elif "отлично" in message.text.lower() or "хорошо" in message.text.lower():
+        await message.answer("Искренне рад за вас♥")
+    elif "узнать о курсе" in message.text.lower() or "какой курс" in message.text.lower():
+        await message.answer("Вам следует подписаться на рассылку при помощи команды /subscribe"
+                             " чтобы я мог уведомить вас $$")
     else:
-        await message.answer("Sorry, i dont understand you.")
+        await message.answer("Извини я не знаю что ответить")
