@@ -16,7 +16,7 @@ class subscribers:
     def subscriber_exist(self,user_id):
         """Checking whether there is a user in the database"""
         with self.connection:
-            result =self.cursor.execute("SELECT * FROM `subscriptions` WHERE `user_id` = ?",
+            result = self.cursor.execute("SELECT * FROM `subscriptions` WHERE `user_id` = ?",
                                         (user_id,)).fetchall()
             return bool(len(result))
 
