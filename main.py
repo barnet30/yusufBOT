@@ -3,7 +3,6 @@ import config
 import logging
 from aiogram import Bot, Dispatcher, executor
 from subs_postgres import subscriptions
-# from subs import subscribers
 
 loop = asyncio.get_event_loop()
 #задаем уровень логов
@@ -30,4 +29,3 @@ if __name__=='__main__':
     from handlers import dp,send_to_admin
     dp.loop.create_task(scheduled(300))
     executor.start_polling(dp,skip_updates=True)#,on_startup=send_to_admin)
-    print("hello world!")

@@ -13,4 +13,3 @@ for crange in sheet.merged_cells:
     df.iloc[rl:rh,cl:ch] = merged_value
 # print(df.iloc[5:21,3])
 
-print(df['09-001'])
