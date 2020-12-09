@@ -3,14 +3,17 @@ import config
 import logging
 from aiogram import Bot, Dispatcher, executor
 from subs_postgres import subscriptions
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+
 
 loop = asyncio.get_event_loop()
 #задаем уровень логов
 logging.basicConfig(level=logging.INFO)
 
+storage = MemoryStorage()
 #initialization of bot
 bot = Bot(token=config.API_TOKEN, parse_mode="HTML")
-dp = Dispatcher(bot,loop= loop)
+dp = Dispatcher(bot,loop= loop,storage=storage)
 
 #initializing db
 db = subscriptions('subscriptions')
