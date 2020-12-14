@@ -1,7 +1,7 @@
 from main import dp,bot,db
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton,ReplyKeyboardRemove
 from config import admin_id
-from states import RegistrationInSystem
+from states import RegistrationStudent, StudInCourse, StudLeaveCourse
 from aiogram.dispatcher import FSMContext
 
 async def send_to_admin(dp):
@@ -43,34 +43,41 @@ async def get_dollar(message: Message):
 @dp.message_handler(commands=['registration'],state=None)
 async def reg_begin(message: Message):
     await message.answer("Введите ваше имя:")
-    await RegistrationInSystem.s1.set()
+    await RegistrationStudent.s1.set()
 
 #
-@dp.message_handler(state=RegistrationInSystem.s1)
-async def reg_answer1(message: Message,state:FSMContext):
+@dp.message_handler(state=RegistrationStudent.s1)
+async def reg_1(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(name=answer)
     await message.answer("Введите вашу фамилию:")
-    await RegistrationInSystem.next()
+    await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationInSystem.s2)
-async def reg_answer2(message: Message,state:FSMContext):
+@dp.message_handler(state=RegistrationStudent.s2)
+async def reg_2(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(surname=answer)
     await message.answer("Введите номер вашей группы:")
-    await RegistrationInSystem.next()
+    await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationInSystem.s3)
-async def reg_answer3(message: Message,state:FSMContext):
+@dp.message_handler(state=RegistrationStudent.s3)
+async def reg_3(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(group=answer)
-    await message.answer("Введите номер вашего студенческого билета:")
-    await RegistrationInSystem.next()
+    await message.answer("Введите ваш возраст:")
+    await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationInSystem.s4)
-async def reg_answer4(message: Message,state:FSMContext):
+@dp.message_handler(state=RegistrationStudent.s4)
+async def reg_4(message: Message,state:FSMContext):
     answer = message.text
-    await state.update_data(stud_card=answer)
+    await state.update_data(age=answer)
+    await message.answer("Введите номер вашей зачётной книжки:")
+    await RegistrationStudent.next()
+
+@dp.message_handler(state=RegistrationStudent.s5)
+async def reg_5(message: Message,state:FSMContext):
+    answer = message.text
+    await state.update_data(gradebook=answer)
     full_data = await state.get_data()
     print(full_data)
 
@@ -78,29 +85,81 @@ async def reg_answer4(message: Message,state:FSMContext):
         name = full_data.get("name")
         surname = full_data.get("surname")
         num_group = full_data.get("group")
-        stud_card = full_data.get("stud_card")
+        gradebook = full_data.get("gradebook")
+        age = full_data.get("age")
         user_id = message.from_user.id
-
-        await message.answer(f"Регистрация прошла успешно\n"
-                             f"Ваши данные:{name},{surname},{num_group},{stud_card}")
+        try:
+            add_new_student(user_id,surname,name,age,num_group,gradebook)
+            await message.answer("Регистрация прошла успешно!☺")
+        except:
+            await message.answer("Вы уже зарегистрированны в системе")
     else:
         await message.answer("Вы ввели неверные данные")
     await state.finish()
+
+@dp.message_handler(commands=['scourse'],state=None)
+async def s_join_course_begin(message:Message):
+    await message.reply("Выберити курс, на который хотите записаться",
+                        reply_markup=course_markup)
+    await StudInCourse.states.s1.set
+
+@dp.message_handler(state=StudInCourse.s1)
+async def s_join_course_1(message:Message,state:FSMContext):
+    course_name = message.text
+    try:
+        id_course = get_id_course_by_name(course_name)
+        check = check_stud_in_course(message.from_user.id,id_course)
+        if check:
+            await message.answer("Вы уже записаны на данный курс",reply_markup=ReplyKeyboardRemove())
+        else:
+            try:
+                stud_join_course(message.from_user.id,id_course)
+                await message.answer(f"Вы успешно записались на курс {ans}",reply_markup=ReplyKeyboardRemove())
+    except:
+        await message.answer("Упс! Что-то пошло не так, попробуй ещё раз",reply_markup=ReplyKeyboardRemove())
+    await state.finish()
+
+
+@dp.message_handler(commands=['leavecourse'],state=None)
+async def sleave_begin(message:Message):
+    await message.answer("Какой курс вы хотите покинуть?",reply_markup=course_markup)
+    await StudLeaveCourse.s1.set()
+
+@dp.message_handler(state=StudLeaveCourse.s1)
+async def sleave1(message:Message, state:FSMContext):
+    course_name = message.text
+    id_course = get_id_course_by_name(course_name)
+    check = check_stud_in_course(message.from_user.id,id_course)
+    if not check:
+        await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
+        await state.finish()
+
+    try:
+        del_stud_from_course(message.from_user.id,id_course)
+        await message.answer(f"Вы были удалены из курса {course_name}.\n",reply_markup=ReplyKeyboardRemove())
+    except:
+        await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
+    await state.finish()
+
+
+
+
 
 
 
 @dp.message_handler(content_types=["text"])
 async def handle_text(message):
-    if "курс" in message.text.lower() or "какой курс" in message.text.lower():
-        await message.answer("Вам следует подписаться на рассылку при помощи команды /subscribe"
-                             " чтобы я мог уведомить вас $$")
-    elif "привет" in message.text.lower() or "ку" in message.text.lower():
-        await message.answer("Привет, Я ЮсуфБот!, я могу сообщать о курсе доллара)")
+
+    if "привет" in message.text.lower() or "ку" in message.text.lower():
+        await message.answer("Привет, Я ЮсуфБот! Я помогаю студентам и преподавателям "
+                             "с учебным процессом ☺")
 
     elif "как дела" in message.text.lower() or "как жизнь" in message.text.lower() :
-        await message.answer("У меня всё отлично, виртуально радаюсь жизни, а у тебя как? ☺")
+        await message.answer("У меня всё отлично - клубнично, а у тебя как? ☺")
     elif "отлично" in message.text.lower() or "хорошо" in message.text.lower():
-        await message.answer("Искренне рад за вас♥")
+        await message.answer("Искренне рад за тебя♥")
+    elif "лох" in message.text.lower() or "не оч"in message.text.lower():
+        await  message.answer("Попей тёплый чай и займись недоделанными делами")
     else:
         await message.answer("Извини я не знаю что ответить")
 
