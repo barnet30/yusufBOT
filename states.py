@@ -9,3 +9,6 @@ class RegistrationStudent(StatesGroup):
 
 class StudInCourse(StatesGroup):
     s1 = State()
+
+class StudLeaveCourse(StatesGroup):
+    s1 = State()
