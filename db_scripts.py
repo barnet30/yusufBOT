@@ -102,3 +102,16 @@ def get_list_of_students(cid):
     answer = cur.fetchall()
     con.close()
     return answer
+
+def student_hw(sid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select homework from "pacanSchema".journal where sid={}'.format(sid))
+    answer = cur.fetchall()
+    con.close()
+    new_answer = []
+    for a in answer:
+        new_answer.append(a[0])
+    return new_answer
+
+print(student_hw(1))
