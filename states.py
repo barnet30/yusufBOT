@@ -12,3 +12,12 @@ class StudInCourse(StatesGroup):
 
 class StudLeaveCourse(StatesGroup):
     s1 = State()
+
+class GetAverageValues(StatesGroup):
+    s1 = State()
+
+class GetWorstStudents(StatesGroup):
+    s1 = State()
+
+class GetCorrelation(StatesGroup):
+    s1 = State()

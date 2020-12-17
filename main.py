@@ -19,7 +19,7 @@ async def shutdown(dispatcher:Dispatcher):
     await dispatcher.storage.close()
     await dispatcher.storage.wait_closed()
 
-db = study('(Тут имя базы данных)')
+db = study('education')
 
 # #initializing db
 # db = subscriptions('subscriptions')
