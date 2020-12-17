@@ -2,7 +2,7 @@ import asyncio
 import config
 import logging
 from aiogram import Bot, Dispatcher, executor
-from subs_postgres import subscriptions
+from dataBase import study
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 
@@ -18,6 +18,8 @@ dp = Dispatcher(bot,loop= loop,storage=storage)
 async def shutdown(dispatcher:Dispatcher):
     await dispatcher.storage.close()
     await dispatcher.storage.wait_closed()
+
+db = study('education')
 
 # #initializing db
 # db = subscriptions('subscriptions')

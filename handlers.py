@@ -2,8 +2,10 @@ from main import dp,bot,db
 from aiogram.types import Message,ReplyKeyboardRemove
 from keybords_button import btn_markup
 from config import admin_id
-from states import RegistrationStudent, StudInCourse, StudLeaveCourse
+from states import RegistrationStudent, StudInCourse, StudLeaveCourse, \
+    GetAverageValues, GetWorstStudents, GetCorrelation
 from aiogram.dispatcher import FSMContext
+import pandas as pd
 #from db_scripts import *
 
 async def send_to_admin(dp):
@@ -45,38 +47,38 @@ async def get_dollar(message: Message):
 @dp.message_handler(commands=['registration'],state=None)
 async def reg_begin(message: Message):
     await message.answer("Введите ваше имя:")
-    await RegistrationStudent.s1.set()
+    await RegistrationStudent.name.set()
 
-#
-@dp.message_handler(state=RegistrationStudent.s1)
+
+@dp.message_handler(state=RegistrationStudent.name)
 async def reg_1(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(name=answer)
     await message.answer("Введите вашу фамилию:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s2)
+@dp.message_handler(state=RegistrationStudent.surname)
 async def reg_2(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(surname=answer)
     await message.answer("Введите номер вашей группы:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s3)
+@dp.message_handler(state=RegistrationStudent.group)
 async def reg_3(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(group=answer)
     await message.answer("Введите ваш возраст:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s4)
+@dp.message_handler(state=RegistrationStudent.age)
 async def reg_4(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(age=answer)
     await message.answer("Введите номер вашей зачётной книжки:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s5)
+@dp.message_handler(state=RegistrationStudent.gradebook)
 async def reg_5(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(gradebook=answer)
@@ -91,7 +93,7 @@ async def reg_5(message: Message,state:FSMContext):
         age = full_data.get("age")
         user_id = message.from_user.id
         try:
-            add_new_student(user_id,surname,name,age,num_group,gradebook)
+            db.add_new_student(user_id,name,surname,age,num_group,gradebook)
             await message.answer("Регистрация прошла успешно!☺")
         except:
             await message.answer("Вы уже зарегистрированны в системе")
@@ -103,20 +105,22 @@ async def reg_5(message: Message,state:FSMContext):
 async def s_join_course_begin(message:Message):
     await message.reply("Выберити курс, на который хотите записаться",
                         reply_markup=btn_markup)
-    await StudInCourse.states.s1.set
+    await StudInCourse.s1.set()
 
 @dp.message_handler(state=StudInCourse.s1)
 async def s_join_course_1(message:Message,state:FSMContext):
     course_name = message.text
     try:
-        id_course = get_id_course_by_name(course_name)
-        check = check_stud_in_course(message.from_user.id,id_course)
+        id_course = db.get_id_course_by_name(course_name)
+        check = db.check_stud_in_course(message.from_user.id,id_course)
         if check:
             await message.answer("Вы уже записаны на данный курс",reply_markup=ReplyKeyboardRemove())
         else:
             try:
-                stud_join_course(message.from_user.id,id_course)
-                await message.answer(f"Вы успешно записались на курс {ans}",reply_markup=ReplyKeyboardRemove())
+                db.stud_join_course(message.from_user.id,id_course)
+                await message.answer(f"Вы успешно записались на курс {course_name}",reply_markup=ReplyKeyboardRemove())
+            except:
+                await message.answer("Что-то пошло не так..",reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Упс! Что-то пошло не так, попробуй ещё раз",reply_markup=ReplyKeyboardRemove())
     await state.finish()
@@ -130,24 +134,134 @@ async def sleave_begin(message:Message):
 @dp.message_handler(state=StudLeaveCourse.s1)
 async def sleave1(message:Message, state:FSMContext):
     course_name = message.text
-    id_course = get_id_course_by_name(course_name)
-    check = check_stud_in_course(message.from_user.id,id_course)
+    id_course = db.get_id_course_by_name(course_name)
+    check = db.check_stud_in_course(message.from_user.id,id_course)
     if not check:
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
         await state.finish()
 
     try:
-        del_stud_from_course(message.from_user.id,id_course)
+        db.del_stud_from_course(message.from_user.id,id_course)
         await message.answer(f"Вы были удалены из курса {course_name}.\n",reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
     await state.finish()
 
 
+@dp.message_handler(commands=['getaveragevalues'],state=None)
+async def enter_course_stats(message:Message):
+    await message.reply("Выберите предмет, по которому Вы хотите получить средние показатели", reply_markup=btn_markup)
+    await GetAverageValues.s1.set()
 
 
+@dp.message_handler(state=GetAverageValues.s1)
+async def answer_q1(message: Message, state: FSMContext):
+    try:
+        answer = message.text
+        cid = db.get_id_course_by_name(answer)
+        list_of_students = db.get_list_of_students(cid)
+        n=len(list_of_students)
+        grades_sum=0
+        ages_sum=0
+        couples_list=[]
+        couples_sum=0
+        for student in list_of_students:
+            grades_sum+=sum(db.get_grades(student[0],cid))
+            ages_sum+=db.get_age(student[0])
+            couples_list=db.get_attendence(student[0],cid)
+            for couple in couples_list:
+                if couple=="Н" or couple=="У":
+                    pass
+                else:
+                    couples_sum+=1
+        if n==0:
+            await message.answer("Нет студентов на данном курсе")
+        elif len(couples_list)==0:
+            await message.answer("Занятий ещё не проводилось"+
+                                "Средний возраст студентов: "+
+                                str(ages_sum/n))
+        else:
+            await message.answer("Средний балл за курс: "+
+                                str(grades_sum/n)+
+                                "Средняя посещаемость: "+
+                                str(couples_sum/(n*len(couples_list)))+"%"+
+                                "Средний возраст студентов: "+
+                                str(ages_sum/n))
+    except:
+        await message.answer("Произошла непредвиденная ошибка")
+    await state.finish()
+
+@dp.message_handler(commands=['getworststudents'],state=None)
+async def get_top5(message: Message):
+    await message.reply("Выберите предмет, по которому Вы хотите полученить данные о студентах, у которых не хватает баллов до зачёта", reply_markup=btn_markup)
+    await GetWorstStudents.s1.set()
 
 
+@dp.message_handler(state=GetWorstStudents.s1)
+async def answer_q1(message: Message, state: FSMContext):
+    try:
+        answer = message.text
+        cid = db.get_id_course_by_name(answer)
+        list_of_students = db.get_list_of_students(cid)
+        worst_students=""
+        for student in list_of_students:
+            if sum(db.get_grades(student[0],cid))<56:
+                worst_students=worst_students+f"{student[1]} {student[2]} : {sum(db.get_grades(student[0],cid))}\n"
+        if len(list_of_students)==0:
+            await message.answer("Нет студентов на данном курсе")
+        else:
+            await message.answer(worst_students)
+    except:
+        await message.answer("Произошла непредвиденная ошибка")
+    await state.finish()
+
+
+@dp.message_handler(commands=['getcorrelation'],state=None)
+async def enter_course_stats(message: Message):
+    await message.reply("Выберите предмет, по которому Вы хотите получить корреляционную зависимость", reply_markup=btn_markup)
+    await GetCorrelation.s1.set()
+
+
+@dp.message_handler(state=GetCorrelation.s1)
+async def answer_q1(message: Message, state: FSMContext):
+    try:
+        answer = message.text
+        cid = db.get_id_course_by_name(answer)
+        list_of_students = db.get_list_of_students(cid)
+        n=len(list_of_students)
+        grades_list=[]
+        attendence_list=[]
+        ages_list=[]
+        couples_list=[]
+        for student in list_of_students:
+            grades_list.append(db.get_grades(student[0],cid))
+            couples_list=db.get_attendence(student[0],cid)
+            couples_sum=0
+            ages_list.append(db.get_age(student[0]))
+            for couple in couples_list:
+                if couple=="Н" or couple=="У":
+                    pass
+                else:
+                    couples_sum+=1
+            attendence_list.append(couples_sum)
+
+        grades_list=pd.Series(grades_list)
+        attendence_list=pd.Series(attendence_list)
+        ages_list=pd.Series(ages_list)
+        if n==0:
+            await message.answer("Нет студентов на данном курсе")
+        elif len(couples_list)==0:
+            await message.answer("Занятий ещё не проводилось")
+        else:
+            await message.answer("Коэффециент корреляции между оценками и посещаемость: "+
+                                str(grades_list.corr(attendence_list))+
+                                "Коэффециент корреляции между оценками и возрастом: "+
+                                str(grades_list.corr(ages_list))+
+                                "Коэффециент корреляции между посещаемостью и возрастом: "+
+                                str(attendence_list.corr(ages_list)))
+    except:
+        await message.answer("Произошла непредвиденная ошибка")
+    await state.finish()
 
 @dp.message_handler(content_types=["text"])
 async def handle_text(message):

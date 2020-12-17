@@ -15,8 +15,6 @@ def connection():
 def get_id_course_by_name(course_name):
     con = connection()
     cur = con.cursor()
-    #cur.execute('select id from "pacanSchema".course where name="{}"'.format(course_name))
-    #cur.execute(' select id from "pacanSchema".course where name=%(name)s' % {'name': course_name})
     cur.execute('SELECT * FROM "pacanSchema".course WHERE name = %s', (course_name, ))
     answer = cur.fetchall()
     con.close()
@@ -64,4 +62,56 @@ def del_stud_from_course(sid, cid):
     con.commit()
     con.close()
 
+def get_grades(sid,cid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select mark from "pacanSchema".journal where sid={} and cid={}'.format(sid,cid))
+    answer = cur.fetchall()
+    con.close()
+    new_answer=[]
+    for a in answer:
+        new_answer.append(a[0])
+    return new_answer
 
+def get_attendence(sid, cid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select attendance from "pacanSchema".journal where sid={} and cid={}'.format(sid, cid))
+    answer = cur.fetchall()
+    con.close()
+    new_answer = []
+    for a in answer:
+        new_answer.append(a[0])
+    return new_answer
+
+def get_age(sid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select age from "pacanSchema".student where id={}'.format(sid))
+    answer = cur.fetchall()
+    con.close()
+    try:
+        return answer[0][0]
+    except:
+        return 'Not found'
+
+def get_list_of_students(cid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select * from "pacanSchema".student where id in (select student_id from "pacanSchema".student_course where course_id={})'.format(cid))
+    answer = cur.fetchall()
+    con.close()
+    return answer
+
+def student_hw(sid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select homework from "pacanSchema".journal where sid={}'.format(sid))
+    answer = cur.fetchall()
+    con.close()
+    new_answer = []
+    for a in answer:
+        new_answer.append(a[0])
+    return new_answer
+
+print(student_hw(1))
