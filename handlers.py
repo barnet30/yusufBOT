@@ -1,8 +1,10 @@
 from main import dp,bot,db
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton,ReplyKeyboardRemove
+from aiogram.types import Message,ReplyKeyboardRemove
+from keybords_button import btn_markup
 from config import admin_id
 from states import RegistrationStudent, StudInCourse, StudLeaveCourse
 from aiogram.dispatcher import FSMContext
+#from db_scripts import *
 
 async def send_to_admin(dp):
     await bot.send_message(chat_id=admin_id,text="Бот запущен!☺")
@@ -43,38 +45,38 @@ async def get_dollar(message: Message):
 @dp.message_handler(commands=['registration'],state=None)
 async def reg_begin(message: Message):
     await message.answer("Введите ваше имя:")
-    await RegistrationStudent.s1.set()
+    await RegistrationStudent.name.set()
 
-#
-@dp.message_handler(state=RegistrationStudent.s1)
+
+@dp.message_handler(state=RegistrationStudent.name)
 async def reg_1(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(name=answer)
     await message.answer("Введите вашу фамилию:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s2)
+@dp.message_handler(state=RegistrationStudent.surname)
 async def reg_2(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(surname=answer)
     await message.answer("Введите номер вашей группы:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s3)
+@dp.message_handler(state=RegistrationStudent.group)
 async def reg_3(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(group=answer)
     await message.answer("Введите ваш возраст:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s4)
+@dp.message_handler(state=RegistrationStudent.age)
 async def reg_4(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(age=answer)
     await message.answer("Введите номер вашей зачётной книжки:")
     await RegistrationStudent.next()
 
-@dp.message_handler(state=RegistrationStudent.s5)
+@dp.message_handler(state=RegistrationStudent.gradebook)
 async def reg_5(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(gradebook=answer)
@@ -89,7 +91,7 @@ async def reg_5(message: Message,state:FSMContext):
         age = full_data.get("age")
         user_id = message.from_user.id
         try:
-            add_new_student(user_id,surname,name,age,num_group,gradebook)
+            db.add_new_student(user_id,surname,name,age,num_group,gradebook)
             await message.answer("Регистрация прошла успешно!☺")
         except:
             await message.answer("Вы уже зарегистрированны в системе")
@@ -100,20 +102,20 @@ async def reg_5(message: Message,state:FSMContext):
 @dp.message_handler(commands=['scourse'],state=None)
 async def s_join_course_begin(message:Message):
     await message.reply("Выберити курс, на который хотите записаться",
-                        reply_markup=course_markup)
+                        reply_markup=btn_markup)
     await StudInCourse.states.s1.set
 
 @dp.message_handler(state=StudInCourse.s1)
 async def s_join_course_1(message:Message,state:FSMContext):
     course_name = message.text
     try:
-        id_course = get_id_course_by_name(course_name)
-        check = check_stud_in_course(message.from_user.id,id_course)
+        id_course = db.get_id_course_by_name(course_name)
+        check = db.check_stud_in_course(message.from_user.id,id_course)
         if check:
             await message.answer("Вы уже записаны на данный курс",reply_markup=ReplyKeyboardRemove())
         else:
             try:
-                stud_join_course(message.from_user.id,id_course)
+                db.stud_join_course(message.from_user.id,id_course)
                 await message.answer(f"Вы успешно записались на курс {ans}",reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Упс! Что-то пошло не так, попробуй ещё раз",reply_markup=ReplyKeyboardRemove())
@@ -122,20 +124,20 @@ async def s_join_course_1(message:Message,state:FSMContext):
 
 @dp.message_handler(commands=['leavecourse'],state=None)
 async def sleave_begin(message:Message):
-    await message.answer("Какой курс вы хотите покинуть?",reply_markup=course_markup)
+    await message.answer("Какой курс вы хотите покинуть?",reply_markup=btn_markup)
     await StudLeaveCourse.s1.set()
 
 @dp.message_handler(state=StudLeaveCourse.s1)
 async def sleave1(message:Message, state:FSMContext):
     course_name = message.text
-    id_course = get_id_course_by_name(course_name)
-    check = check_stud_in_course(message.from_user.id,id_course)
+    id_course = db.get_id_course_by_name(course_name)
+    check = db.check_stud_in_course(message.from_user.id,id_course)
     if not check:
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
         await state.finish()
 
     try:
-        del_stud_from_course(message.from_user.id,id_course)
+        db.del_stud_from_course(message.from_user.id,id_course)
         await message.answer(f"Вы были удалены из курса {course_name}.\n",reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())

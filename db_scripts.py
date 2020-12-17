@@ -54,7 +54,7 @@ def stud_join_course(sid, cid):
     con.close()
 
 
-def delete_stud_from_course(sid, cid):
+def del_stud_from_course(sid, cid):
     con = connection()
     cur = con.cursor()
     sql_query = 'delete from "pacanSchema".student_course where student_id={} and course_id={}'.format(sid, cid)
