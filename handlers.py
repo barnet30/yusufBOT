@@ -42,7 +42,6 @@ async def get_dollar(message: Message):
     await message.answer(f"Сейчас доллар стоит {get_dollar()} рублей")
 
 
-
 #registration
 @dp.message_handler(commands=['registration'],state=None)
 async def reg_begin(message: Message):
@@ -88,11 +87,11 @@ async def reg_5(message: Message,state:FSMContext):
     await RegistrationStudent.next()
 
 @dp.message_handler(state=RegistrationStudent.check)
-async def reg_5(message: Message,state:FSMContext):
-    full_data = await state.get_data()
-    print(full_data)
+async def reg_6(message: Message,state:FSMContext):
     answer = message.text
     if (answer=="Подтвердить"):
+        full_data = await state.get_data()
+        print(full_data)
         if full_data.get("name").isalpha() and full_data.get("surname").isalpha():
             name = full_data.get("name")
             surname = full_data.get("surname")
@@ -107,6 +106,10 @@ async def reg_5(message: Message,state:FSMContext):
                 await message.answer("Вы уже зарегистрированны в системе",reply_markup=ReplyKeyboardRemove())
         else:
             await message.answer("Вы ввели неверные данные",reply_markup=ReplyKeyboardRemove())
+    elif(answer=="Изменить данные"):
+        await message.answer("Введите ваше имя:")
+        await RegistrationStudent.name.set()
+        return
     await state.finish()
 
 @dp.message_handler(commands=['scourse'],state=None)
