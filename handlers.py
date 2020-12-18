@@ -1,6 +1,6 @@
 from main import dp,bot,db
 from aiogram.types import Message,ReplyKeyboardRemove
-from keybords_button import btn_markup
+from keybords_button import btn_markup, btn_accept
 from config import admin_id
 from states import RegistrationStudent, StudInCourse, StudLeaveCourse, \
     GetAverageValues, GetWorstStudents, GetCorrelation
@@ -34,7 +34,6 @@ async def subscribe(message: Message):
         #если юзер есть в базе, то меняем статус подписки
         db.update_subscription(message.from_user.id, False)
         await message.answer("Вы успешно отписались☺")
-
 
 
 #registration
@@ -72,27 +71,39 @@ async def reg_4(message: Message,state:FSMContext):
     await message.answer("Введите номер вашей зачётной книжки:")
     await RegistrationStudent.next()
 
+
+
 @dp.message_handler(state=RegistrationStudent.gradebook)
 async def reg_5(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(gradebook=answer)
-    full_data = await state.get_data()
-    print(full_data)
+    await message.answer("Вы точно хотите зарегистрироваться на курс? ",reply_markup=btn_accept)
+    await RegistrationStudent.next()
 
-    if full_data.get("name").isalpha() and full_data.get("surname").isalpha():
-        name = full_data.get("name")
-        surname = full_data.get("surname")
-        num_group = full_data.get("group")
-        gradebook = full_data.get("gradebook")
-        age = full_data.get("age")
-        user_id = message.from_user.id
-        try:
-            db.add_new_student(user_id,name,surname,age,num_group,gradebook)
-            await message.answer("Регистрация прошла успешно!☺")
-        except:
-            await message.answer("Вы уже зарегистрированны в системе")
-    else:
-        await message.answer("Вы ввели неверные данные")
+@dp.message_handler(state=RegistrationStudent.check)
+async def reg_6(message: Message,state:FSMContext):
+    answer = message.text
+    if (answer=="Подтвердить"):
+        full_data = await state.get_data()
+        print(full_data)
+        if full_data.get("name").isalpha() and full_data.get("surname").isalpha():
+            name = full_data.get("name")
+            surname = full_data.get("surname")
+            num_group = full_data.get("group")
+            gradebook = full_data.get("gradebook")
+            age = full_data.get("age")
+            user_id = message.from_user.id
+            try:
+                db.add_new_student(user_id,name,surname,age,num_group,gradebook)
+                await message.answer("Регистрация прошла успешно!☺",reply_markup=ReplyKeyboardRemove())
+            except:
+                await message.answer("Вы уже зарегистрированны в системе",reply_markup=ReplyKeyboardRemove())
+        else:
+            await message.answer("Вы ввели неверные данные",reply_markup=ReplyKeyboardRemove())
+    elif(answer=="Изменить данные"):
+        await message.answer("Введите ваше имя:")
+        await RegistrationStudent.name.set()
+        return
     await state.finish()
 
 @dp.message_handler(commands=['scourse'],state=None)
@@ -125,6 +136,7 @@ async def sleave_begin(message:Message):
     await message.answer("Какой курс вы хотите покинуть?",reply_markup=btn_markup)
     await StudLeaveCourse.s1.set()
 
+
 @dp.message_handler(state=StudLeaveCourse.s1)
 async def sleave1(message:Message, state:FSMContext):
     course_name = message.text
@@ -133,7 +145,6 @@ async def sleave1(message:Message, state:FSMContext):
     if not check:
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
         await state.finish()
-
     try:
         db.del_stud_from_course(message.from_user.id,id_course)
         await message.answer(f"Вы были удалены из курса {course_name}.\n",reply_markup=ReplyKeyboardRemove())
