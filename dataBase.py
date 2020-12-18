@@ -8,7 +8,7 @@ class study:
             database= database,
             user= "postgres",
             host= "127.0.0.1",
-            password="a2r56wqm",
+            password="godsofsession",
             port= "5432"
         )
         self.cursor = self.connection.cursor()
