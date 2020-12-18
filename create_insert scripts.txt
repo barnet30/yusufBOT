@@ -90,10 +90,14 @@ alter table journal enable_constraints constraint journal_student_id_fk
 alter table journal enable_constraints constraint journal_course_id_fk
 ;
 
-insert into "pacanSchema".course(name, pass) values ('Algebra', 123);
-insert into "pacanSchema".course(name, pass) values ('Geometry', 321
+insert into course(name, pass) values ('Python🐍', 123123123);
+insert into course(name, pass) values ("C#",321321321);
+insert into course(name, pass) values ("Java",90909090);
+insert into course(name, pass) values ("Database design",210610003);
+insert into course(name, pass) values ("Methods of optimizations",119019);
 
-insert into "pacanSchema".student(id, name, surname, idzach, idgrou, age) VALUES (1, 'Yusuf', 'Zarifyanov', '123', '09-812', 19);
+
+insert into student(id, name, surname, idzach, idgrou, age) VALUES (1, 'Yusuf', 'Zarifyanov', '123', '09-812', 19);
 insert into "pacanSchema".student(id, name, surname, idzach, idgrou, age) VALUES (2, 'Vladimir', 'Biktimirov', '234', '09-812', 20);
 insert into "pacanSchema".student(id, name, surname, idzach, idgrou, age) VALUES (3, 'Nikita', 'Chernov', '345', '09-812', 20);
 insert into "pacanSchema".student(id, name, surname, idzach, idgrou, age) VALUES (4, 'Danil', 'Efimov', '456', '09-812', 20);

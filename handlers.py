@@ -35,12 +35,6 @@ async def subscribe(message: Message):
         db.update_subscription(message.from_user.id, False)
         await message.answer("Вы успешно отписались☺")
 
-#send dollar rate
-@dp.message_handler(commands=['dollar'])
-async def get_dollar(message: Message):
-    from exrate import get_dollar
-    await message.answer(f"Сейчас доллар стоит {get_dollar()} рублей")
-
 
 
 #registration
