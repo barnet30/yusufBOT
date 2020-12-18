@@ -6,6 +6,7 @@ class RegistrationStudent(StatesGroup):
     group = State()
     age = State()
     gradebook = State()
+    check = State()
 
 class StudInCourse(StatesGroup):
     s1 = State()

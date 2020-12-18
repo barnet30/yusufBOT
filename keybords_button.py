@@ -11,7 +11,7 @@ btn_markup.row(btn1, btn2, btn3)
 btn_markup.add(btn4,btn5)
 
 btny = KeyboardButton("Подтвердить")
-btnn = KeyboardButton("Изменить введённые данные")
+btnn = KeyboardButton("Изменить данные")
 btn_accept = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 btn_accept.add(btny,btnn)
 
