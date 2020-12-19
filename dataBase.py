@@ -98,44 +98,28 @@ class study:
                 new_answer.append(a[0])
             return new_answer
 
+    def add_new_teacher(self,tid,tname,tsurname):
+        with self.connection:
+            self.cursor.execute("""insert into teacher(tid,name,surname) 
+            values(%s,%s,%s)""",(tid,tname,tsurname))
+            self.connection.commit()
+
+    def check_course_password(self,course_name, course_pass):
+        with self.connection:
+            self.cursor.execute("""select * from course where name = %s and 
+            pass = %s""",(course_name,course_pass))
+            ans = self.cursor.fetchall()
+            return ans
+
+    def teacher_join_course(self,tid,cid):
+        with self.connection:
+            self.cursor.execute("""insert into teacher_course(teacher_id, course_id)
+            values (%s,%s)""",(tid,cid))
+            self.connection.commit()
+
 
     def close(self):
         """Closing database"""
         self.connection.close()
 
 
-
-
-
-    # def add_subscriber(self,user_id, status=True):
-    #     """Add new subscriber"""
-    #     with self.connection:
-    #         self.cursor.execute("""INSERT INTO subscribers (user_id, status)
-    #                             VALUES (%s,%s)""",(user_id,status))
-    #         self.connection.commit()
-    #
-    # def get_subscriptions(self, status = True):
-    #     """Get active subscribers"""
-    #     with self.connection:
-    #         try:
-    #             self.cursor.execute("SELECT * FROM subscribers WHERE status = (%s)",(status,))
-    #             query_results = self.cursor.fetchall()
-    #             return query_results
-    #         except:
-    #             pass
-    #
-    # def subscriber_exist(self,user_id):
-    #     """Checking whether there is a user in the database"""
-    #     with self.connection:
-    #         try:
-    #             self.cursor.execute("SELECT * FROM subscribers WHERE user_id = (%s)",(user_id,))
-    #             query_results = self.cursor.fetchall()
-    #             return bool(len(query_results))
-    #             self.connection.commit()
-    #         except:
-    #             return False
-    #
-    # def update_subscription(self, user_id, status):
-    #     """Update status subscribe"""
-    #     with self.connection:
-    #         return self.cursor.execute("UPDATE subscribers SET status = %s WHERE user_id = %s",(status,user_id))

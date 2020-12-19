@@ -1,43 +1,18 @@
 from main import dp,bot,db
 from aiogram.types import Message,ReplyKeyboardRemove
-from keybords_button import btn_markup, btn_accept
+from keybords_button import course_keyboard, accept_keyboard, choice_keyboard
 from config import admin_id
 from states import RegistrationStudent, StudInCourse, StudLeaveCourse, \
-    GetAverageValues, GetWorstStudents, GetCorrelation
+    GetAverageValues, GetWorstStudents, GetCorrelation, RegistrationTeacher,\
+    TeacherInCourse
 from aiogram.dispatcher import FSMContext
 import pandas as pd
-#from db_scripts import *
 
 async def send_to_admin(dp):
     await bot.send_message(chat_id=admin_id,text="Бот запущен!☺")
 
-#activate subscribe
-@dp.message_handler(commands=['subscribe'])
-async def subscribe(message: Message):
-    if (not db.subscriber_exist(message.from_user.id)):
-        #если юзера нет в базе, добавляем его
-        db.add_subscriber(message.from_user.id)
-        await message.answer("Вы успешно подписаны на рассылку\nСкоро узнаете о курсе доллара☺")
-    else:
-        #иначе обновляем статус подписки
-        db.update_subscription(message.from_user.id, True)
-        await message.answer("Ваша подписка обновлена\nСкоро узнаете о курсе доллара☺")
-
-#deactivate subscribe
-@dp.message_handler(commands=['unsubscribe'])
-async def subscribe(message: Message):
-    if (not db.subscriber_exist(message.from_user.id)):
-        #если юзера нет в базе, добавляем его с неактивной подпиской
-        db.add_subscriber(message.from_user.id,False)
-        await message.answer("Вы и так не подписаны")
-    else:
-        #если юзер есть в базе, то меняем статус подписки
-        db.update_subscription(message.from_user.id, False)
-        await message.answer("Вы успешно отписались☺")
-
-
 #registration
-@dp.message_handler(commands=['registration'],state=None)
+@dp.message_handler(commands=['reg_stud'],state=None)
 async def reg_begin(message: Message):
     await message.answer("Введите ваше имя:")
     await RegistrationStudent.name.set()
@@ -77,7 +52,7 @@ async def reg_4(message: Message,state:FSMContext):
 async def reg_5(message: Message,state:FSMContext):
     answer = message.text
     await state.update_data(gradebook=answer)
-    await message.answer("Вы точно хотите зарегистрироваться на курс? ",reply_markup=btn_accept)
+    await message.answer("Вы точно хотите зарегистрироваться на курс? ",reply_markup=accept_keyboard)
     await RegistrationStudent.next()
 
 @dp.message_handler(state=RegistrationStudent.check)
@@ -94,7 +69,7 @@ async def reg_6(message: Message,state:FSMContext):
             age = full_data.get("age")
             user_id = message.from_user.id
             try:
-                db.add_new_student(user_id,name,surname,age,num_group,gradebook)
+                db.add_new_student(user_id,name,surname,gradebook,num_group,age)
                 await message.answer("Регистрация прошла успешно!☺",reply_markup=ReplyKeyboardRemove())
             except:
                 await message.answer("Вы уже зарегистрированны в системе",reply_markup=ReplyKeyboardRemove())
@@ -109,7 +84,7 @@ async def reg_6(message: Message,state:FSMContext):
 @dp.message_handler(commands=['scourse'],state=None)
 async def s_join_course_begin(message:Message):
     await message.reply("Выберити курс, на который хотите записаться",
-                        reply_markup=btn_markup)
+                        reply_markup=course_keyboard)
     await StudInCourse.s1.set()
 
 @dp.message_handler(state=StudInCourse.s1)
@@ -133,7 +108,7 @@ async def s_join_course_1(message:Message,state:FSMContext):
 
 @dp.message_handler(commands=['leavecourse'],state=None)
 async def sleave_begin(message:Message):
-    await message.answer("Какой курс вы хотите покинуть?",reply_markup=btn_markup)
+    await message.answer("Какой курс вы хотите покинуть?",reply_markup=course_keyboard)
     await StudLeaveCourse.s1.set()
 
 
@@ -155,7 +130,7 @@ async def sleave1(message:Message, state:FSMContext):
 
 @dp.message_handler(commands=['getaveragevalues'],state=None)
 async def enter_course_stats(message:Message):
-    await message.reply("Выберите предмет, по которому Вы хотите получить средние показатели", reply_markup=btn_markup)
+    await message.reply("Выберите предмет, по которому Вы хотите получить средние показатели", reply_markup=course_keyboard)
     await GetAverageValues.s1.set()
 
 
@@ -198,7 +173,7 @@ async def answer_q1(message: Message, state: FSMContext):
 
 @dp.message_handler(commands=['getworststudents'],state=None)
 async def get_top5(message: Message):
-    await message.reply("Выберите предмет, по которому Вы хотите полученить данные о студентах, у которых не хватает баллов до зачёта", reply_markup=btn_markup)
+    await message.reply("Выберите предмет, по которому Вы хотите полученить данные о студентах, у которых не хватает баллов до зачёта", reply_markup=course_keyboard)
     await GetWorstStudents.s1.set()
 
 
@@ -223,7 +198,7 @@ async def answer_q1(message: Message, state: FSMContext):
 
 @dp.message_handler(commands=['getcorrelation'],state=None)
 async def enter_course_stats(message: Message):
-    await message.reply("Выберите предмет, по которому Вы хотите получить корреляционную зависимость", reply_markup=btn_markup)
+    await message.reply("Выберите предмет, по которому Вы хотите получить корреляционную зависимость", reply_markup=course_keyboard)
     await GetCorrelation.s1.set()
 
 
@@ -267,6 +242,79 @@ async def answer_q1(message: Message, state: FSMContext):
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
+
+
+@dp.message_handler(commands=['reg_teacher'],state=None)
+async def reg_teacher_begin(message:Message):
+    await message.answer("Введите ваше имя:")
+    await RegistrationTeacher.name.set()
+
+@dp.message_handler(state=RegistrationTeacher.name)
+async def reg_t1(message:Message,state: FSMContext):
+    name = message.text
+    await state.update_data(name=name)
+    await message.answer("Введите вашу фамилию:")
+    await RegistrationTeacher.next()
+
+@dp.message_handler(state=RegistrationTeacher.surname)
+async def reg_t2(message:Message,state:FSMContext):
+    surname = message.text
+    await state.update_data(surname=surname)
+    data = await state.get_data()
+    await message.answer("Подтвердите или измените введённую вами информацию:")
+    await message.answer(f"Имя: {data.get('name')}, Фамилия: {data.get('surname')}",reply_markup=accept_keyboard)
+    await RegistrationTeacher.next()
+
+@dp.message_handler(state=RegistrationTeacher.check)
+async def reg_t3(message:Message,state:FSMContext):
+    answer = message.text
+    if answer == "Подтвердить":
+        data = await state.get_data()
+        name = data.get('name')
+        surname = data.get('surname')
+        teacher_id = message.from_user.id
+        if name.isalpha() and surname.isalpha():
+            try:
+                db.add_new_teacher(teacher_id,name,surname)
+                await message.answer("Вы успешно зарегистрировались!☺")
+            except:
+                await message.answer("Вы уже зарегистрированы")
+        else:
+            await message.answer("Вы ввели неверные данные")
+    elif answer == "Изменить данные":
+        await message.answer("Введите ваше имя:")
+        await RegistrationTeacher.name.set()
+        return
+    await state.finish()
+
+@dp.message_handler(commands=['tcourse'],state=None)
+async def t_join_course_begin(message:Message):
+    await message.answer("Администратором какого курса вы хотите стать? ",reply_markup=course_keyboard)
+    await TeacherInCourse.coruse_name.set()
+
+@dp.message_handler(state=TeacherInCourse.coruse_name)
+async def t_join_coruse1(message:Message, state:FSMContext):
+    course_name = message.text
+    await state.update_data(course_name=course_name)
+    await message.answer("Введите пароль от курса:")
+    await TeacherInCourse.next()
+
+@dp.message_handler(state=TeacherInCourse.password)
+async def t_join_course2(message:Message, state:FSMContext):
+    password = message.text
+    data = await state.get_data()
+    course_name = data.get("course_name")
+    try:
+        if db.check_course_password(course_name,password):
+            db.teacher_join_course(message.from_user.id,db.get_id_course_by_name(course_name))
+            await message.answer(f"Вы стали администратором курса {course_name}")
+        else:
+            await message.answer("Вы ввели неверный пароль\nПопробуйте ещё раз")
+    except:
+        await message.answer("Что-то пошло не так...")
+    await state.finish()
+
+
 
 @dp.message_handler(content_types=["text"])
 async def handle_text(message):
