@@ -14,6 +14,11 @@ class StudInCourse(StatesGroup):
 class StudLeaveCourse(StatesGroup):
     s1 = State()
 
+###
+class GetBall(StatesGroup):
+    s1 = State
+###
+
 class GetAverageValues(StatesGroup):
     s1 = State()
 
