@@ -2,11 +2,13 @@ from main import dp,bot,db
 from aiogram.types import Message,ReplyKeyboardRemove
 from keybords_button import course_keyboard, accept_keyboard, choice_keyboard
 from config import admin_id
-from states import RegistrationStudent, StudInCourse, StudLeaveCourse, GetBall, \
+from states import RegistrationStudent, StudInCourse, StudLeaveCourse, GetOverall, \
     GetAverageValues, GetWorstStudents, GetCorrelation, RegistrationTeacher,\
-    TeacherInCourse
+    TeacherInCourse, GetJournal,GetAttendenceJournal,FillGrades,FillAttendence
 from aiogram.dispatcher import FSMContext
 import pandas as pd
+import math
+import traceback
 
 async def send_to_admin(dp):
     await bot.send_message(chat_id=admin_id,text="Бот запущен!☺")
@@ -128,21 +130,21 @@ async def sleave1(message:Message, state:FSMContext):
     await state.finish()
 
 
-@dp.message_handler(commands=['getmyball'],state=None)
+@dp.message_handler(commands=['getmyoverall'],state=None)
 async def enter_course_stats(message:Message):
-    await message.reply("Статистику по какому предмету вы хотите получить?", reply_markup=course_keyboard)
-    await GetBall.s1.set()
+    await message.reply("По какому предмету вы хотите получить общий балл?", reply_markup=course_keyboard)
+    await GetOverall.s1.set()
 
-@dp.message_handler(state=GetBall.s1)
+@dp.message_handler(state=GetOverall.s1)
 async def answer_q1(message: Message, state: FSMContext):
     course_name = message.text
     try:
         cid = db.get_id_course_by_name(course_name)
-        balls = db.get_grades(message.from_user.id,cid)
-        itog_ball=0
-        for i in balls:
-            itog_ball+=i
-        await message.answer("Ваш балл по курсу: " + str(itog_ball), reply_markup=ReplyKeyboardRemove())
+        score = db.get_grades(message.from_user.id,cid)
+        itog_score=0
+        for i in score:
+            itog_score+=i
+        await message.answer("Ваш балл по курсу: " + str(itog_score), reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
@@ -185,9 +187,9 @@ async def answer_q1(message: Message, state: FSMContext):
         else:
             await message.answer("Средний балл за курс: "+
                                 str(grades_sum/n)+
-                                "Средняя посещаемость: "+
-                                str(couples_sum/(n*len(couples_list)))+"%"+
-                                "Средний возраст студентов: "+
+                                "\nСредняя посещаемость: "+
+                                str(couples_sum/(n*len(couples_list))*100)+"%"+
+                                "\nСредний возраст студентов: "+
                                 str(ages_sum/n))
     except:
         await message.answer("Произошла непредвиденная ошибка")
@@ -219,13 +221,13 @@ async def answer_q1(message: Message, state: FSMContext):
 
 
 @dp.message_handler(commands=['getcorrelation'],state=None)
-async def enter_course_stats(message: Message):
+async def course_corr_begin(message: Message):
     await message.reply("Выберите предмет, по которому Вы хотите получить корреляционную зависимость", reply_markup=course_keyboard)
     await GetCorrelation.s1.set()
 
 
 @dp.message_handler(state=GetCorrelation.s1)
-async def answer_q1(message: Message, state: FSMContext):
+async def course_corr1(message: Message, state: FSMContext):
     try:
         answer = message.text
         cid = db.get_id_course_by_name(answer)
@@ -236,7 +238,7 @@ async def answer_q1(message: Message, state: FSMContext):
         ages_list=[]
         couples_list=[]
         for student in list_of_students:
-            grades_list.append(db.get_grades(student[0],cid))
+            grades_list.append(sum(db.get_grades(student[0],cid)))
             couples_list=db.get_attendence(student[0],cid)
             couples_sum=0
             ages_list.append(db.get_age(student[0]))
@@ -318,7 +320,7 @@ async def t_join_course_begin(message:Message):
 async def t_join_coruse1(message:Message, state:FSMContext):
     course_name = message.text
     await state.update_data(course_name=course_name)
-    await message.answer("Введите пароль от курса:")
+    await message.answer("Введите пароль от курса:",reply_markup=ReplyKeyboardRemove)
     await TeacherInCourse.next()
 
 @dp.message_handler(state=TeacherInCourse.password)
@@ -336,6 +338,128 @@ async def t_join_course2(message:Message, state:FSMContext):
         await message.answer("Что-то пошло не так...")
     await state.finish()
 
+
+@dp.message_handler(commands=['getjournal'],state=None)
+async def get_journal_begin(message: Message):
+    await message.reply("Выберите предмет, по которому вы хотите получить журнал", reply_markup=course_keyboard)
+    await GetJournal.journal.set()
+
+@dp.message_handler(state=GetJournal.journal)
+async def get_journal1(message: Message, state: FSMContext):
+    course_name = message.text
+    try:
+        tid=message.from_user.id
+        cid=db.get_id_course_by_name(course_name)
+        if (db.course_check(tid,cid)):
+            list_of_students = db.get_list_of_students(cid)
+            n=len(list_of_students)
+            journal=db.get_from_journal(cid)
+            dates=[]
+            hometasks=[]
+            for i in journal:
+                dates.append(i[2])
+                hometasks.append(i[5])
+            df = pd.DataFrame(columns = dates)
+            df['Студент']=list_of_students
+            i=0
+            for student in list_of_students:
+                df.loc[i]=db.get_grades(student[0],cid)
+                i+=1
+            df.loc[i]=hometasks
+            df.insert(loc=0, column='Студенты', value=list_of_students)
+            answer=df
+            answer.to_excel(r"Журнал.xlsx")
+            await message.answer
+        else:
+            await message.answer("Вы выбрали неправильный курс")
+    except:
+        await message.answer('Произошла непредвиденная ошибка')
+
+@dp.message_handler(commands=['fillgrades'],state=None)
+async def fill_grades(message: Message):
+    await message.reply("Напишите дату выставления оценок в формате ДД.ММ.ГГГГ")
+    await FillGrades.fill.set()
+
+@dp.message_handler(state=FillGrades.fill)
+async def fill_grades1(message: Message, state: FSMContext):
+    try:
+        answer = message.text
+        df = pd.read_excel(r"Журнал.xlsx")
+        grades = []
+        for i in df[answer]:
+            grades.append(i)
+        cid = db.get_cid_by_tid(message.from_user.id)
+        list_of_students = db.get_list_of_students(cid)
+        for i in range(0, len(list_of_students)):
+            try:
+                if math.isnan(grades[i]):
+                    db.assign_grades(list_of_students[i][0], cid, 0)
+                else:
+                    db.assign_grades(list_of_students[i][0], cid, grades[i])
+            except:
+                pass
+        await message.answer('Оценки выставлены!')
+    except:
+        await message.answer('Не удалось найти файл с оценками')
+
+
+
+@dp.message_handler(commands=['getattendencejournal'],state=None)
+async def journal_attendece(message: Message):
+    await message.reply("Выберите предмет, по которому вы хотите получить журнал посещаемости", reply_markup=course_keyboard)
+    await GetAttendenceJournal.journal.set()
+
+@dp.message_handler(state=GetAttendenceJournal.journal)
+async def answer_q1(message: Message, state: FSMContext):
+    course_name = message.text
+    try:
+        tid=message.from_user.id
+        cid=db.get_id_course_by_name(course_name)
+        if (db.course_check(tid,cid)):
+            list_of_students = db.get_list_of_students(cid)
+            n=len(list_of_students)
+            journal=db.get_from_journal(cid)
+            dates=[]
+            for i in journal:
+                dates.append(i[2])
+            df = pd.DataFrame(columns = dates)
+            df['Студент']=list_of_students
+            i=0
+            for student in list_of_students:
+                df.loc[i]=db.get_attendence(student[0],cid)
+                i+=1
+            df.insert(loc=0, column='Студенты', value=list_of_students)
+            answer=df
+            answer.to_excel(r"Журнал_Посещаемости.xlsx")
+            await message.answer
+        else:
+            await message.answer("Вы выбрали неправильный курс")
+    except:
+        await message.answer('Произошла непредвиденная ошибка')
+
+@dp.message_handler(commands=['fillattendence'])
+async def fill_gradse(message: Message):
+    await message.reply("Напишите дату выставления посещаемости в формате ГГГГ-ММ-ДД")
+    await FillAttendence.fill.set()
+
+@dp.message_handler(state=FillAttendence.fill)
+async def fill_grades1(message: Message, state: FSMContext):
+    try:
+        answer = message.text
+        df = pd.read_excel(r"Журнал_Посещаемости.xlsx")
+        attendence = []
+        for i in df[answer]:
+            attendence.append(i)
+        cid = db.get_cid_by_tid(message.from_user.id)
+        list_of_students = db.get_list_of_students(cid)
+        for i in range(0, len(list_of_students)):
+            try:
+                db.assign_attendence(list_of_students[i][0], cid, attendence[i])
+            except:
+                pass
+        await message.answer('Посещаемость выставлена!')
+    except:
+        await message.answer('Не удалось найти файл с оценками')
 
 
 @dp.message_handler(content_types=["text"])

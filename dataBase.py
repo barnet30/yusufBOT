@@ -74,7 +74,7 @@ class study:
 
     def get_age(self,sid):
         with self.connection:
-            self.cursor.execute('select age from student where id={}'.format(sid))
+            self.cursor.execute('select age from student where sid={}'.format(sid))
             answer = self.cursor.fetchall()
             try:
                 return answer[0][0]
@@ -84,7 +84,7 @@ class study:
     def get_list_of_students(self,cid):
         with self.connection:
             self.cursor.execute(
-                'select * from student where id in (select student_id from student_course where course_id={})'.format(
+                'select * from student where sid in (select student_id from student_course where course_id={})'.format(
                     cid))
             answer = self.cursor.fetchall()
             return answer

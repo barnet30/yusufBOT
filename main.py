@@ -21,18 +21,6 @@ async def shutdown(dispatcher:Dispatcher):
 
 db = study('education')
 
-# #initializing db
-# db = subscriptions('subscriptions')
-# #db = subscribers('subsdb.db')
-# async def scheduled(wait_for):
-#     from exrate import get_dollar
-#     while True:
-#         await asyncio.sleep(wait_for)
-#         subscribtions = db.get_subscriptions()
-#         for s in subscribtions:
-#             await bot.send_message(s[1],
-#                                f"Курс доллара к рублю {get_dollar()}\nУдачного дня☺")
-
 #execute polling
 if __name__=='__main__':
     from handlers import dp,send_to_admin
