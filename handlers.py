@@ -2,7 +2,7 @@ from main import dp,bot,db
 from aiogram.types import Message,ReplyKeyboardRemove
 from keybords_button import course_keyboard, accept_keyboard, choice_keyboard
 from config import admin_id
-from states import RegistrationStudent, StudInCourse, StudLeaveCourse, \
+from states import RegistrationStudent, StudInCourse, StudLeaveCourse, GetBall, \
     GetAverageValues, GetWorstStudents, GetCorrelation, RegistrationTeacher,\
     TeacherInCourse
 from aiogram.dispatcher import FSMContext
@@ -126,6 +126,28 @@ async def sleave1(message:Message, state:FSMContext):
     except:
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
     await state.finish()
+
+
+@dp.message_handler(commands=['getmyball'],state=None)
+async def enter_course_stats(message:Message):
+    await message.reply("Статистику по какому предмету вы хотите получить?", reply_markup=course_keyboard)
+    await GetBall.s1.set()
+
+@dp.message_handler(state=GetBall.s1)
+async def answer_q1(message: Message, state: FSMContext):
+    course_name = message.text
+    try:
+        cid = db.get_id_course_by_name(course_name)
+        balls = db.get_grades(message.from_user.id,cid)
+        itog_ball=0
+        for i in balls:
+            itog_ball+=i
+        await message.answer("Ваш балл по курсу: " + str(itog_ball), reply_markup=ReplyKeyboardRemove())
+    except:
+        await message.answer("Произошла непредвиденная ошибка")
+    await state.finish()
+
+
 
 
 @dp.message_handler(commands=['getaveragevalues'],state=None)
