@@ -22,3 +22,12 @@ class GetWorstStudents(StatesGroup):
 
 class GetCorrelation(StatesGroup):
     s1 = State()
+
+class RegistrationTeacher(StatesGroup):
+    name = State()
+    surname = State()
+    check = State()
+
+class TeacherInCourse(StatesGroup):
+    coruse_name = State()
+    password = State()
