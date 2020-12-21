@@ -114,4 +114,35 @@ def student_hw(sid):
         new_answer.append(a[0])
     return new_answer
 
-print(student_hw(1))
+def get_from_journal(cid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select * from "pacanSchema".journal where cid = {}'.format(cid))
+    answer = cur.fetchall()
+    con.close()
+    return answer
+
+def assign_grades(sid, cid, grade):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('update "pacanSchema".journal set mark = {} where sid={} and cid={};'.format(grade, sid, cid))
+    con.commit()
+    con.close()
+
+def get_cid_by_tid(tid):
+    con = connection()
+    cur = con.cursor()
+    cur.execute('select course_id from "pacanSchema".teacher_course where teacher_id = {}'.format(tid))
+    answer = cur.fetchall()
+    con.close()
+    return answer
+
+def assign_attendence(list_of_students, cid, attendence):
+    con = connection()
+    cur = con.cursor()
+    for i in range(len(attendence)):
+        cur.execute('update "pacanSchema".journal set attendance = {att[0]!r} where sid = {att[1]!r} and cid={att[2]!r}'.format(att = [attendence[0], list_of_students[i], cid]))
+        con.commit()
+    con.close()
+
+assign_attendence([1,2,3,4,5], 1, ['н', 'н', 'н', 'н', 'н'])
