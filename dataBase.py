@@ -117,6 +117,39 @@ class study:
             values (%s,%s)""",(tid,cid))
             self.connection.commit()
 
+    def get_from_journal(self,cid):
+        with self.connection:
+
+            self.cursor.execute('select * from journal where cid = {}'.format(cid))
+            answer = self.cursor.fetchall()
+            return answer
+
+    def assign_grades(self,sid, cid, grade):
+        with self.connection:
+            self.cursor.execute('update journal set mark = {} where sid={} and cid={};'.format(grade, sid, cid))
+            self.connection.commit()
+
+    def get_cid_by_tid(self,tid):
+        with self.connection:
+            self.cursor.execute('select course_id from teacher_course where teacher_id = {}'.format(tid))
+            answer = self.cursor.fetchall()
+            return answer
+
+    def assign_attendence(self,list_of_students, cid, attendence):
+        with self.connection:
+
+            for i in range(len(attendence)):
+                self.cursor.execute(
+                    'update journal set attendance = %s where sid = %s and cid=%s',
+                    (attendence[0], list_of_students[i], cid))
+                self.connection.commit()
+
+    def course_check(self,tid,cid):
+        with self.connection:
+            self.cursor.execute("""select * from teacher_course where teacher_id = %s and course_id =%s""",
+                                (tid,cid))
+            ans = self.cursor.fetchall()
+            return ans
 
     def close(self):
         """Closing database"""
