@@ -15,8 +15,8 @@ class StudLeaveCourse(StatesGroup):
     s1 = State()
 
 ###
-class GetBall(StatesGroup):
-    s1 = State
+class GetOverall(StatesGroup):
+    s1 = State()
 ###
 
 class GetAverageValues(StatesGroup):
@@ -36,3 +36,15 @@ class RegistrationTeacher(StatesGroup):
 class TeacherInCourse(StatesGroup):
     coruse_name = State()
     password = State()
+
+class GetJournal(StatesGroup):
+    journal = State()
+
+class FillGrades(StatesGroup):
+    fill = State()
+
+class GetAttendenceJournal(StatesGroup):
+    journal = State()
+
+class FillAttendence(StatesGroup):
+    fill = State()

@@ -65,8 +65,6 @@ create table journal
     jdate      timestamp default timezone('utc'::text, now()) not null,
     mark       integer,
     attendance varchar(1),
-    homework varchar(255),
-    work_completed int,
     constraint pk_journal
         primary key (sid, cid, jdate)
 );
@@ -79,7 +77,6 @@ insert into course(name, pass) values ('Database design',210610003);
 insert into course(name, pass) values ('Methods of optimizations',119019);
 
 
-insert into journal(sid, cid, mark, attendance, homework, work_completed) VALUES (1, 1, 2, 'n', 'print hello world!', 0);
 
 
 
