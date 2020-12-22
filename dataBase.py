@@ -84,8 +84,7 @@ class study:
     def get_list_of_students(self,cid):
         with self.connection:
             self.cursor.execute(
-                'select * from student where sid in (select student_id from student_course where course_id={})'.format(
-                    cid))
+                'select * from student where sid in (select student_id from student_course where course_id=%s)',(cid,))
             answer = self.cursor.fetchall()
             return answer
 

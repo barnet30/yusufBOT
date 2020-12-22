@@ -1,5 +1,5 @@
 from main import db
-from loader import dp
+from loader import dp, bot
 from aiogram.types import Message,ReplyKeyboardRemove
 from states import GetAverageValues, GetWorstStudents, GetCorrelation, RegistrationTeacher,\
     TeacherInCourse, GetJournal,GetAttendenceJournal,FillGrades,FillAttendence
@@ -207,34 +207,30 @@ async def get_journal_begin(message: Message):
 async def get_journal1(message: Message, state: FSMContext):
     course_name = message.text
     try:
-        tid=message.from_user.id
-        cid=db.get_id_course_by_name(course_name)
-        if (db.course_check(tid,cid)):
-            list_of_students = db.get_list_of_students(cid)
-            n=len(list_of_students)
-            journal=db.get_from_journal(cid)
-            dates=[]
-            hometasks=[]
-            for i in journal:
-                dates.append(i[2])
-                hometasks.append(i[5])
-            df = pd.DataFrame(columns = dates)
-            df['Студент']=list_of_students
-            i=0
-            for student in list_of_students:
-                df.loc[i]=db.get_grades(student[0],cid)
-                i+=1
-            df.loc[i]=hometasks
-            df.insert(loc=0, column='Студенты', value=list_of_students)
-            answer=df
-            answer.to_excel(r"Журнал.xlsx")
-            await message.answer
-        else:
-            await message.answer("Вы выбрали неправильный курс")
-    except Exception as err:
+        cid = db.get_id_course_by_name(course_name)
+        list_of_students = db.get_list_of_students(cid)
+        n = len(list_of_students)
+        journal = db.get_from_journal(cid)
+        dates = []
+        hometasks = []
+        print(list_of_students)
+        for i in journal:
+            dates.append(i[2])
+            #hometasks.append(i[5])
+        df = pd.DataFrame(columns=dates)
+        df.insert(loc=0, column='Студенты', value=list_of_students)
+        i = 0
+        for student in list_of_students:
+            df.loc[i] = [student[2] + " " + student[1]] + db.get_grades(student[0], cid)
+            i += 1
+        answer = df
+        answer.to_excel(r"Журнал.xlsx")
+        await message.answer
+    except:
         await message.answer('Произошла непредвиденная ошибка')
         await message.answer(traceback.format_exc())
-    await state.finish()
+        await state.finish()
+        return
 
 @dp.message_handler(commands=['fillgrades'],state=None)
 async def fill_grades(message: Message):
@@ -246,19 +242,21 @@ async def fill_grades1(message: Message, state: FSMContext):
     try:
         answer = message.text
         df = pd.read_excel(r"Журнал.xlsx")
-        grades = []
-        for i in df[answer]:
-            grades.append(i)
-        cid = db.get_cid_by_tid(message.from_user.id)
-        list_of_students = db.get_list_of_students(cid)
-        for i in range(0, len(list_of_students)):
-            try:
-                if math.isnan(grades[i]):
-                    db.assign_grades(list_of_students[i][0], cid, 0)
-                else:
-                    db.assign_grades(list_of_students[i][0], cid, grades[i])
-            except:
-                pass
+        del df['Студент']
+        for date in df.columns:
+            grades = []
+            for i in df[date]:
+                grades.append(i)
+            cid = get_cid_by_tid(message.from_user.id)
+            list_of_students = get_list_of_students(cid)
+            for i in range(0, len(list_of_students)):
+                try:
+                    if math.isnan(grades[i]):
+                        assign_grades(list_of_students[i][0], cid, 0)
+                    else:
+                        assign_grades(list_of_students[i][0], cid, grades[i])
+                except:
+                    pass
         await message.answer('Оценки выставлены!')
     except:
         await message.answer('Не удалось найти файл с оценками')
