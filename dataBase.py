@@ -24,6 +24,16 @@ class study:
             except:
                 return 'Not Found'
 
+    def get_name_course_by_id(self,cid):
+        """Getting id by course name"""
+        with self.connection:
+            self.cursor.execute('SELECT * FROM course WHERE id = %s', (cid,))
+            answer = self.cursor.fetchall()
+            try:
+                return answer[0][1]
+            except:
+                return 'Not Found'
+
     def add_new_student(self,sid, sname, ssurname, idzach, idgroup,age):
         """Add new student at database"""
         with self.connection:
@@ -40,6 +50,12 @@ class study:
                 return False
             else:
                 return True
+
+    def get_stud_info(self,sid):
+        with self.connection:
+            self.cursor.execute("""select * from student where sid=%s """,(sid,))
+            answer = self.cursor.fetchall()
+            return answer[0]
 
     def stud_join_course(self,sid, cid):
         """Add student at course"""
@@ -132,7 +148,10 @@ class study:
         with self.connection:
             self.cursor.execute('select course_id from teacher_course where teacher_id = {}'.format(tid))
             answer = self.cursor.fetchall()
-            return answer
+            try:
+                return answer[0][0]
+            except:
+                return 'Not Found'
 
     def assign_attendence(self,list_of_students, cid, attendence):
         with self.connection:
