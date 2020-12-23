@@ -174,7 +174,7 @@ class study:
                     (attendence[0], list_of_students[i], cid))
                 self.connection.commit()
                 
-   def assign_attendence1(self,sid, cid, jdate, attendence):
+    def assign_attendence1(self,sid, cid, jdate, attendence):
         with self.connection:
             self.cursor.execute('update journal set attendance = {} where sid={} and cid={} and jdate={};'.format(attendence, sid, cid, jdate))
             self.connection.commit()
