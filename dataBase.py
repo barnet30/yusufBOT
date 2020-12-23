@@ -141,7 +141,7 @@ class study:
     
     def add_couple(self, sid, cid, jdate):
         with self.connection:
-            self.cursor.execute("insert into journal(sid, cid, assessment,jdate) values ({journal[0]!r}, {journal[1]!r}, 0, {journal[2]!r})".format(
+            self.cursor.execute("insert into journal(sid, cid, jdate, mark, attendence) values ({journal[0]!r}, {journal[1]!r}, {journal[2]!r}, 0, " ")".format(
             journal=[sid, cid, jdate]))
             self.connection.commit()
     
