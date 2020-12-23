@@ -123,9 +123,9 @@ class study:
             answer = self.cursor.fetchall()
             return answer
 
-    def assign_grades(self,sid, cid, grade):
+    def assign_grades(self,sid, cid, jdate, grade):
         with self.connection:
-            self.cursor.execute('update journal set mark = {} where sid={} and cid={};'.format(grade, sid, cid))
+            self.cursor.execute('update journal set mark = {} where sid={} and cid={} and jdate={};'.format(grade, sid, cid, jdate))
             self.connection.commit()
 
     def get_cid_by_tid(self,tid):
