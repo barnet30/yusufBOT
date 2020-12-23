@@ -167,7 +167,6 @@ class study:
 
     def assign_attendence(self,list_of_students, cid, attendence):
         with self.connection:
-
             for i in range(len(attendence)):
                 self.cursor.execute(
                     'update journal set attendance = %s where sid = %s and cid=%s',
