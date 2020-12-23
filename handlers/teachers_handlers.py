@@ -226,7 +226,7 @@ async def get_journal(message: types.Message):
 
 @dp.message_handler(commands=['fillgrades'])
 async def fill_gradse(message: Message):
-    await message.reply("Напишите дату выставления посещаемости в формате ГГГГ-ММ-ДД")
+    await message.reply("Напишите дату выставления оценок в формате ГГГГ-ММ-ДД")
     await FillGrades.fill.set()
                          
 @dp.message_handler(state=FillGrades.fill)
@@ -255,7 +255,7 @@ async def fill_grades1(message: Message, state: FSMContext):
     await state.finish()                         
 
                          
-@dp.message_handler(commands=['deletegrades'])
+@dp.message_handler(commands=['deletecouple'])
 async def delete_gradse(message: Message):
     await message.reply("Напишите оценки за какую дату вы хотели бы удалить (в формате ГГГГ-ММ-ДД)")
     await DeleteGrades.delete.set()
@@ -306,28 +306,31 @@ async def answer_q1(message: Message, state: FSMContext):
         await message.answer('Произошла непредвиденная ошибка')
     await state.finish()
 
-@dp.message_handler(commands=['fillattendence'])
-async def fill_gradse(message: Message):
-    await message.reply("Напишите дату выставления посещаемости в формате ГГГГ-ММ-ДД")
-    await FillAttendence.fill.set()
 
+@dp.message_handler(commands=['fillattendence'])
+async def fill_attendence(message: Message):
+    await message.reply("Убедитесь, что вы выставили оценки за эту дату\nНапишите дату выставления посещаемости в формате ГГГГ-ММ-ДД")
+    await FillAttendence.fill.set()
+                         
 @dp.message_handler(state=FillAttendence.fill)
-async def fill_grades1(message: Message, state: FSMContext):
+async def fill_attendence1(message: Message, state: FSMContext):
     try:
-        answer = message.text
-        df = pd.read_excel(r"Журнал_Посещаемости.xlsx")
-        attendence = []
-        for i in df[answer]:
-            attendence.append(i)
         cid = db.get_cid_by_tid(message.from_user.id)
         list_of_students = db.get_list_of_students(cid)
+        answer = message.text
+        df = pd.read_excel(r"Журнал_Посещаемости.xlsx")     
+        attendence = []
+        for i in df[answer]:
+            if math.isnan(i):
+                attendence.append(" ")
+            else:
+                attendence.append(i)
         for i in range(0, len(list_of_students)):
             try:
-                db.assign_attendence(list_of_students[i][0], cid, attendence[i])
+                db.assign_attendence1(list_of_students[i][0], cid, answer, attendence[i])
             except:
                 pass
         await message.answer('Посещаемость выставлена!')
     except:
-        await message.answer('Не удалось найти файл с оценками')
-    await state.finish()
-
+        await message.answer('Не удалось найти файл с посещаемостью')
+    await state.finish()                                
