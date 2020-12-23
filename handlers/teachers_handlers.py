@@ -213,34 +213,33 @@ async def course_corr1(message: Message, state: FSMContext):
 @dp.message_handler(commands=['getjournal'])
 async def get_journal(message: Message):
     try:
-        tid = message.from_user.id
-        cid = db.get_cid_by_tid(tid)
+        tid=message.from_user.id
+        cid=db.get_cid_by_tid(tid)
         students = db.get_list_of_students(cid)
-        journal = db.get_from_journal(cid)
-        dates = []
-        names = []
-        surnames = []
-        groups = []
-        zach_books = []
+        journal=db.get_from_journal(cid)
+        dates=[]
+        names=[]
+        surnames=[]
+        groups=[]
+        zach_books =[]
         grades = []
         check = False
         for i in journal:
             dates.append(i[2])
         for student in students:
-            grades_stud = []
+            grades_stud =[]
             names.append(student[1])
             surnames.append(student[2])
             groups.append(student[4])
             zach_books.append(student[3])
-            for j in db.get_grades(student[0], cid):
+            for j in db.get_grades(student[0],cid):
                 grades_stud.append(j)
             grades.append(grades_stud)
             if grades_stud:
                 check = True
-        amounts_grades = []
+        amounts_grades=[]
         for g in grades:
             amounts_grades.append(len(g))
-        print(grades)
         df = pd.DataFrame({'Фамилия': surnames, 'Имя': names, 'Группа': groups, 'Номер зачётной книжки': zach_books})
         if check:
             max_amount_grades = max(amounts_grades)
@@ -251,28 +250,29 @@ async def get_journal(message: Message):
                     while len(grade) < max_amount_grades:
                         grade.insert(len(grade), 0)
             df_grades = pd.DataFrame(columns=dates)
-            print(len(grades), len(df_grades), len(df_grades.columns))
+            #print(len(grades),len(df_grades),len(df_grades.columns))
             j = 0
+            #print(grades)
             for col in df_grades.columns:
-                g = []
+                g =[]
                 for i in range(len(students)):
                     g.append(grades[i][j])
                 df_grades[col] = np.array(g)
-                print(col)
-                j += 1
-            answer = pd.merge(df, df_grades, left_index=True, right_index=True)
+                #print(col)
+                j+=1
+            answer = pd.merge(df,df_grades,left_index=True,right_index=True)
+            answer.to_excel(r"Журнал.xlsx")
 
         else:
             answer = df
             answer.to_excel(r"Журнал.xlsx")
-        await message.answer(f"Журнал для курса {db.get_name_course_by_id(cid)}", reply_markup=ReplyKeyboardRemove())
-        with open("Журнал.xlsx", 'rb') as file:
+        await message.answer(f"Журнал для курса {db.get_name_course_by_id(cid)}",reply_markup=ReplyKeyboardRemove())
+        with open("Журнал.xlsx",'rb') as file:
             await dp.bot.send_document(message.from_user.id, file)
     except:
-        await message.answer('Вы не являетесь администратором ни одного из курсов', reply_markup=ReplyKeyboardRemove())
+        await message.answer('Вы не являетесь администратором ни одного из курсов',reply_markup=ReplyKeyboardRemove())
         print(traceback.format_exc())
         return
-
 
 @dp.message_handler(commands=['fillgrades'])
 async def fill_grades1(message: Message, state: FSMContext):

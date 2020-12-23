@@ -135,7 +135,7 @@ class study:
     def get_from_journal(self,cid):
         with self.connection:
 
-            self.cursor.execute('select * from journal where cid = {}'.format(cid))
+            self.cursor.execute('select * from journal where cid = %s and sid in (select student_id from student_course where course_id = %s)',(cid,cid))
             answer = self.cursor.fetchall()
             return answer
 
