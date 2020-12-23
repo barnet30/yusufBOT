@@ -112,7 +112,7 @@ async def answer_q1(message: Message, state: FSMContext):
         if n==0:
             await message.answer("Нет студентов на данном курсе")
         elif len(couples_list)==0:
-            await message.answer("Занятий ещё не проводилось"+
+            await message.answer("Занятий ещё не проводилось\n"+
                                 "Средний возраст студентов: "+
                                 str(ages_sum/n))
         else:
