@@ -8,7 +8,6 @@ from keybords_button import course_keyboard, accept_keyboard
 import pandas as pd
 import math
 import traceback
-import numpy as np
 
 
 @dp.message_handler(commands=['reg_teacher'],state=None)
@@ -143,11 +142,11 @@ async def answer_q1(message: Message, state: FSMContext):
             if sum(db.get_grades(student[0],cid))<56:
                 worst_students=worst_students+f"{student[1]} {student[2]} : {sum(db.get_grades(student[0],cid))}\n"
         if len(list_of_students)==0:
-            await message.answer("Нет студентов на данном курсе",reply_markup=ReplyKeyboardRemove())
+            await message.answer("Нет студентов на данном курсе")
         else:
-            await message.answer(worst_students,reply_markup=ReplyKeyboardRemove())
+            await message.answer(worst_students)
     except:
-        await message.answer("Произошла непредвиденная ошибка",reply_markup=ReplyKeyboardRemove())
+        await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
 
 
@@ -184,108 +183,93 @@ async def course_corr1(message: Message, state: FSMContext):
         attendence_list=pd.Series(attendence_list)
         ages_list=pd.Series(ages_list)
         if n==0:
-            await message.answer("Нет студентов на данном курсе",reply_markup=ReplyKeyboardRemove())
+            await message.answer("Нет студентов на данном курсе")
         elif len(couples_list)==0:
-            await message.answer("Занятий ещё не проводилось",reply_markup=ReplyKeyboardRemove())
+            await message.answer("Занятий ещё не проводилось")
         else:
             await message.answer("Коэффециент корреляции между оценками и посещаемость: "+
                                 str(grades_list.corr(attendence_list))+
                                 "Коэффециент корреляции между оценками и возрастом: "+
                                 str(grades_list.corr(ages_list))+
                                 "Коэффециент корреляции между посещаемостью и возрастом: "+
-                                str(attendence_list.corr(ages_list)),reply_markup=ReplyKeyboardRemove())
+                                str(attendence_list.corr(ages_list)))
     except:
-        await message.answer("Произошла непредвиденная ошибка",reply_markup=ReplyKeyboardRemove())
+        await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
 
 @dp.message_handler(commands=['getjournal'])
-async def get_journal(message: Message):
+async def get_journal(message: types.Message):
     try:
         tid=message.from_user.id
         cid=db.get_cid_by_tid(tid)
-        students = db.get_list_of_students(cid)
+        list_of_students = db.get_list_of_students(cid)
         journal=db.get_from_journal(cid)
         dates=[]
-        names=[]
-        surnames=[]
-        groups=[]
-        zach_books =[]
-        grades = []
-        check = False
         for i in journal:
             dates.append(i[2])
-        for student in students:
-            grades_stud =[]
-            names.append(student[1])
-            surnames.append(student[2])
-            groups.append(student[4])
-            zach_books.append(student[3])
-            for j in db.get_grades(student[0],cid):
-                grades_stud.append(j)
-            grades.append(grades_stud)
-            if grades_stud:
-                check = True
-        amounts_grades=[]
-        for g in grades:
-            amounts_grades.append(len(g))
-        print(grades)
-        df = pd.DataFrame({'Фамилия': surnames, 'Имя': names, 'Группа': groups, 'Номер зачётной книжки': zach_books})
-        if check:
-            max_amount_grades = max(amounts_grades)
-            dates = list(set(dates))
-            dates.sort()
-            for grade in grades:
-                if len(grade) < max_amount_grades:
-                    while len(grade) < max_amount_grades:
-                        grade.insert(len(grade), 0)
-            df_grades = pd.DataFrame(columns=dates)
-            print(len(grades),len(df_grades),len(df_grades.columns))
-            j = 0
-            for col in df_grades.columns:
-                g =[]
-                for i in range(len(students)):
-                    g.append(grades[i][j])
-                df_grades[col] = np.array(g)
-                print(col)
-                j+=1
-            answer = pd.merge(df,df_grades,left_index=True,right_index=True)
-
-        else:
-            answer = df
-            answer.to_excel(r"Журнал.xlsx")
-        await message.answer(f"Журнал для курса {db.get_name_course_by_id(cid)}",reply_markup=ReplyKeyboardRemove())
-        with open("Журнал.xlsx",'rb') as file:
-            await dp.bot.send_document(message.from_user.id, file)
+        dates=list(set(dates))
+        dates.sort()
+        df = pd.DataFrame(columns = dates)
+        df.insert(loc=0, column='Студенты', value=list_of_students)
+        i=0
+        for student in list_of_students:
+            df.loc[i]=[student[2]+" "+student[1]]+get_grades(student[0],cid)
+            i+=1
+        answer=df
+        answer.to_excel(r"Журнал.xlsx")
+        await message.answer
     except:
-        await message.answer('Вы не являетесь администратором ни одного из курсов',reply_markup=ReplyKeyboardRemove())
-        print(traceback.format_exc())
+        await message.answer('Произошла непредвиденная ошибка')
+        await message.answer(traceback.format_exc())
         return
                          
-                         
+
 @dp.message_handler(commands=['fillgrades'])
+async def fill_gradse(message: Message):
+    await message.reply("Напишите дату выставления посещаемости в формате ГГГГ-ММ-ДД")
+    await FillGrades.fill.set()
+                         
+@dp.message_handler(state=FillGrades.fill)
 async def fill_grades1(message: Message, state: FSMContext):
     try:
-        df = pd.read_excel(r"Журнал.xlsx")
-        del df['Студент']
-        for date in df.columns:
-            grades = []
-            for i in df[date]:
-                grades.append(i)
-            cid = db.get_cid_by_tid(message.from_user.id)
-            list_of_students = db.get_list_of_students(cid)
-            for i in range(0, len(list_of_students)):
-                try:
-                    if math.isnan(grades[i]):
-                        db.assign_grades(list_of_students[i][0], cid, date, 0)
-                    else:
-                        db.assign_grades(list_of_students[i][0], cid, date, grades[i])
-                except:
-                    pass
+        cid = db.get_cid_by_tid(message.from_user.id)
+        list_of_students = db.get_list_of_students(cid)
+        answer = message.text
+        for student in list_of_students:
+            db.add_couple(student[0],cid,answer)
+        df = pd.read_excel(r"Журнал.xlsx")     
+        grades = []
+        for grade in df[answer]:
+            if math.isnan(grade):
+                grades.append(0)
+            else:
+                grades.append(int(grade))
+        for i in range(0, len(list_of_students)):
+            try:
+                db.assign_grades(list_of_students[i][0], cid, answer, grades[i])
+            except:
+                pass
         await message.answer('Оценки выставлены!')
     except:
         await message.answer('Не удалось найти файл с оценками')
+    await state.finish()                         
 
-
+                         
+@dp.message_handler(commands=['deletegrades'])
+async def delete_gradse(message: Message):
+    await message.reply("Напишите оценки за какую дату вы хотели бы удалить (в формате ГГГГ-ММ-ДД)")
+    await DeleteGrades.delete.set()
+                         
+@dp.message_handler(state=DeleteGrades.delete)
+async def delete_grades1(message: Message, state: FSMContext):
+    try:
+        cid = db.get_cid_by_tid(message.from_user.id)
+        answer = message.text
+        db.delete_grades(cid,answer)
+        await message.answer('Оценки удалены!')
+    except:
+        await message.answer('Не удалось удалить оценки')
+    await state.finish()         
 
 
 @dp.message_handler(commands=['getattendencejournal'],state=None)
