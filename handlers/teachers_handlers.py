@@ -197,50 +197,36 @@ async def course_corr1(message: Message, state: FSMContext):
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
 
-
-@dp.message_handler(commands=['getjournal'],state=None)
-async def get_journal_begin(message: Message):
-    await message.reply("Выберите предмет, по которому вы хотите получить журнал", reply_markup=course_keyboard)
-    await GetJournal.journal.set()
-
-@dp.message_handler(state=GetJournal.journal)
-async def get_journal1(message: Message, state: FSMContext):
-    course_name = message.text
+@dp.message_handler(commands=['getjournal'])
+async def get_journal(message: types.Message):
     try:
-        cid = db.get_id_course_by_name(course_name)
+        tid=message.from_user.id
+        cid=db.get_cid_by_tid(tid)
         list_of_students = db.get_list_of_students(cid)
-        n = len(list_of_students)
-        journal = db.get_from_journal(cid)
-        dates = []
-        hometasks = []
-        print(list_of_students)
+        journal=db.get_from_journal(cid)
+        dates=[]
         for i in journal:
             dates.append(i[2])
-            #hometasks.append(i[5])
-        df = pd.DataFrame(columns=dates)
+        dates=list(set(dates))
+        dates.sort()
+        df = pd.DataFrame(columns = dates)
         df.insert(loc=0, column='Студенты', value=list_of_students)
-        i = 0
+        i=0
         for student in list_of_students:
-            df.loc[i] = [student[2] + " " + student[1]] + db.get_grades(student[0], cid)
-            i += 1
-        answer = df
+            df.loc[i]=[student[2]+" "+student[1]]+get_grades(student[0],cid)
+            i+=1
+        answer=df
         answer.to_excel(r"Журнал.xlsx")
         await message.answer
     except:
         await message.answer('Произошла непредвиденная ошибка')
         await message.answer(traceback.format_exc())
-        await state.finish()
         return
-
-@dp.message_handler(commands=['fillgrades'],state=None)
-async def fill_grades(message: Message):
-    await message.reply("Напишите дату выставления оценок в формате ДД.ММ.ГГГГ")
-    await FillGrades.fill.set()
-
-@dp.message_handler(state=FillGrades.fill)
-async def fill_grades1(message: Message, state: FSMContext):
+                         
+                         
+@dp.message_handler(commands=['fillgrades'])
+async def fill_grades1(message: types.Message, state: FSMContext):
     try:
-        answer = message.text
         df = pd.read_excel(r"Журнал.xlsx")
         del df['Студент']
         for date in df.columns:
@@ -252,15 +238,15 @@ async def fill_grades1(message: Message, state: FSMContext):
             for i in range(0, len(list_of_students)):
                 try:
                     if math.isnan(grades[i]):
-                        assign_grades(list_of_students[i][0], cid, 0)
+                        assign_grades(list_of_students[i][0], cid, date, 0)
                     else:
-                        assign_grades(list_of_students[i][0], cid, grades[i])
+                        assign_grades(list_of_students[i][0], cid, date, grades[i])
                 except:
                     pass
         await message.answer('Оценки выставлены!')
     except:
         await message.answer('Не удалось найти файл с оценками')
-    await state.finish()
+
 
 
 
