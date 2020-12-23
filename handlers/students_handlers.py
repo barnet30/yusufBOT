@@ -4,7 +4,7 @@ from aiogram.types import Message,ReplyKeyboardRemove
 from states import RegistrationStudent, StudInCourse, StudLeaveCourse, GetOverall
 from aiogram.dispatcher import FSMContext
 from keybords_button import course_keyboard, accept_keyboard
-
+import traceback
 
 
 
@@ -78,7 +78,7 @@ async def reg_6(message: Message,state:FSMContext):
         else:
             await message.answer("Вы ввели неверные данные",reply_markup=ReplyKeyboardRemove())
     elif(answer=="Изменить данные"):
-        await message.answer("Введите ваше имя:")
+        await message.answer("Введите ваше имя:",reply_markup=ReplyKeyboardRemove())
         await RegistrationStudent.name.set()
         return
     await state.finish()
@@ -150,3 +150,12 @@ async def answer_q1(message: Message, state: FSMContext):
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
+
+@dp.message_handler(commands=['myinfo'])
+async def get_stud_info(message:Message):
+    try:
+        student = db.get_stud_info(message.from_user.id)
+        await message.answer("Ваши данные:\n"
+                       f"Фамилия: {student[2]}\nИмя: {student[1]}\nНомер зачётной книжки: {student[3]}\nГруппа: {student[4]}\nВозраст: {student[5]}")
+    except:
+        await message.answer("Вы ещё не зарегистрированы!\nИспользуйте команду /reg_stud , чтобы зарегистрироваться!")

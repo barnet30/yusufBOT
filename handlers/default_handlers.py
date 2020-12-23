@@ -19,6 +19,8 @@ async def handle_text(message):
     elif "отлично" in message.text.lower() or "хорошо" in message.text.lower():
         await message.answer("Искренне рад за тебя♥")
     elif "лох" in message.text.lower() or "не оч"in message.text.lower():
-        await  message.answer("Попей тёплый чай и займись недоделанными делами")
+        await  message.answer("Попей тёплый чай и ляг поспи реально")
+    # elif "дан" in message.text.lower():
+    #     await bot.send_message(chat_id=1463929248,text="Kak dela")
     else:
         await message.answer("Извини я не знаю что ответить")
