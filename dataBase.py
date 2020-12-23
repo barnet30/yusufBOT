@@ -145,7 +145,7 @@ class study:
             journal=[sid, cid, jdate]))
             self.connection.commit()
     
-    def delete_grades(self,cid,jdate)):
+    def delete_grades(self,cid,jdate):
         with self.connection:
             self.cursor.execute("delete from journal where cid={} and jdate={};".format(cid, jdate))
             self.connection.commit()
