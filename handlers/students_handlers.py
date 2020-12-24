@@ -1,7 +1,7 @@
 from main import db
 from loader import dp
 from aiogram.types import Message,ReplyKeyboardRemove
-from states import RegistrationStudent, StudInCourse, StudLeaveCourse, GetOverall
+from states import RegistrationStudent, StudInCourse, StudLeaveCourse, GetOverall, GetGrades
 from aiogram.dispatcher import FSMContext
 from keybords_button import course_keyboard, accept_keyboard
 import traceback
@@ -131,7 +131,6 @@ async def sleave1(message:Message, state:FSMContext):
         await message.answer("Вас нет в списке студентов данного курса",reply_markup=ReplyKeyboardRemove())
     await state.finish()
 
-
 @dp.message_handler(commands=['getmyoverall'],state=None)
 async def enter_course_stats(message:Message):
     await message.reply("По какому предмету вы хотите получить общий балл?", reply_markup=course_keyboard)
@@ -150,6 +149,27 @@ async def answer_q1(message: Message, state: FSMContext):
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
+
+##############
+@dp.message_handler(commands=['getmygrades'],state=None)
+async def enter_course_stats(message:Message):
+    await message.reply("По какому предмету вы хотите получить оценки?", reply_markup=course_keyboard)
+    await GetGrades.s1.set()
+
+@dp.message_handler(state=GetGrades.s1)
+async def answer_q1(message: Message, state: FSMContext):
+    course_name = message.text
+    try:
+        cid = db.get_id_course_by_name(course_name)
+        score = db.get_grades(message.from_user.id,cid)
+        scores=[]
+        for i in score:
+            scores.append(i)
+        await message.answer("Ваши оценки по курсу: " + str(scores), reply_markup=ReplyKeyboardRemove())
+    except:
+        await message.answer("Произошла непредвиденная ошибка")
+    await state.finish()
+#################
 
 @dp.message_handler(commands=['myinfo'])
 async def get_stud_info(message:Message):

@@ -18,6 +18,10 @@ class StudLeaveCourse(StatesGroup):
 class GetOverall(StatesGroup):
     s1 = State()
 ###
+###
+class GetGrades(StatesGroup):
+    s1 = State()
+###
 
 class GetAverageValues(StatesGroup):
     s1 = State()
