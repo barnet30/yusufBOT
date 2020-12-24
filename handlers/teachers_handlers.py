@@ -105,20 +105,22 @@ async def answer_q1(message: Message, state: FSMContext):
         n = len(list_of_students)
         grades_sum = 0
         ages_sum = 0
-        couples_list = []
         couples_sum = 0
+        fin_couples = 0
         for student in list_of_students:
+            stud_couple=0
             grades_sum += sum(db.get_grades(student[0], cid))
             ages_sum += db.get_age(student[0])
-            couples_list = db.get_attendence(student[0], cid)
-            for couple in couples_list:
+            for couple in db.get_attendence(student[0], cid):
                 if couple == "Н" or couple == "У":
                     pass
                 else:
                     couples_sum += 1
+                    stud_couple +=1
+            fin_couples = max(fin_couples,stud_couple)
         if n == 0:
             await message.answer("Нет студентов на данном курсе")
-        elif len(couples_list) == 0:
+        elif fin_couples == 0:
             await message.answer("Занятий ещё не проводилось" +
                                  "Средний возраст студентов: " +
                                  str(ages_sum / n))
@@ -126,7 +128,7 @@ async def answer_q1(message: Message, state: FSMContext):
             await message.answer("Средний балл за курс: " +
                                  str(grades_sum / n) +
                                  "\nСредняя посещаемость: " +
-                                 str(couples_sum / (n * len(couples_list)) * 100) + "%" +
+                                 str(couples_sum / (n * fin_couples) * 100) + "%" +
                                  "\nСредний возраст студентов: " +
                                  str(ages_sum / n))
     except:

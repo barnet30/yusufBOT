@@ -165,7 +165,7 @@ async def answer_q1(message: Message, state: FSMContext):
         scores=[]
         for i in score:
             scores.append(i)
-        await message.answer("Ваши оценки по курсу: " + str(scores), reply_markup=ReplyKeyboardRemove())
+        await message.answer("Ваши оценки по курсу: " + ' '.join(str(scores)), reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
