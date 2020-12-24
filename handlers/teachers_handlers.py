@@ -277,27 +277,80 @@ async def get_journal(message: Message):
         return
 
 @dp.message_handler(commands=['fillgrades'])
+async def fill_gradse(message: Message):
+    await message.reply("Напишите дату выставления оценок в формате ГГГГ-ММ-ДД")
+    await FillGrades.fill.set()
+                         
+@dp.message_handler(state=FillGrades.fill)
 async def fill_grades1(message: Message, state: FSMContext):
     try:
-        df = pd.read_excel(r"Оценки.xlsx")
-        del df['Студент']
-        for date in df.columns:
-            grades = []
-            for i in df[date]:
-                grades.append(i)
-            cid = db.get_cid_by_tid(message.from_user.id)
-            list_of_students = db.get_list_of_students(cid)
-            for i in range(0, len(list_of_students)):
-                try:
-                    if math.isnan(grades[i]):
-                        db.assign_grades(list_of_students[i][0], cid, date, 0)
-                    else:
-                        db.assign_grades(list_of_students[i][0], cid, date, grades[i])
-                except:
-                    pass
+        cid = db.get_cid_by_tid(message.from_user.id)
+        list_of_students = db.get_list_of_students(cid)
+        answer = message.text
+        for student in list_of_students:
+            db.add_couple(student[0],cid,answer)
+        df = pd.read_excel(r"Оценки.xlsx")     
+        grades = []
+        for grade in df[answer]:
+            if math.isnan(grade):
+                grades.append(0)
+            else:
+                grades.append(int(grade))
+        for i in range(0, len(list_of_students)):
+            try:
+                db.assign_grades(list_of_students[i][0], cid, answer, grades[i])
+            except:
+                pass
         await message.answer('Оценки выставлены!')
     except:
         await message.answer('Не удалось найти файл с оценками')
+    await state.finish()        
+
+@dp.message_handler(commands=['changegrades'])
+async def change_grades(message: Message):
+    await message.reply("Напишите дату оценок, подлежащих изменению, в формате ГГГГ-ММ-ДД")
+    await ChangeGrades.change.set()
+                         
+@dp.message_handler(state=FillGrades.fill)
+async def change_grades1(message: Message, state: FSMContext):
+    try:
+        cid = db.get_cid_by_tid(message.from_user.id)
+        list_of_students = db.get_list_of_students(cid)
+        answer = message.text
+        for student in list_of_students:
+            db.add_couple(student[0],cid,answer)
+        df = pd.read_excel(r"Оценки.xlsx")     
+        grades = []
+        for grade in df[answer]:
+            if math.isnan(grade):
+                grades.append(0)
+            else:
+                grades.append(int(grade))
+        for i in range(0, len(list_of_students)):
+            try:
+                db.assign_grades(list_of_students[i][0], cid, answer, grades[i])
+            except:
+                pass
+        await message.answer('Оценки выставлены!')
+    except:
+        await message.answer('Не удалось найти файл с оценками')
+    await state.finish()  
+
+@dp.message_handler(commands=['deletegrades'])
+async def delete_gradse(message: Message):
+    await message.reply("Напишите оценки за какую дату вы хотели бы удалить (в формате ГГГГ-ММ-ДД)")
+    await DeleteGrades.delete.set()
+                         
+@dp.message_handler(state=DeleteGrades.delete)
+async def delete_grades1(message: Message, state: FSMContext):
+    try:
+        cid = db.get_cid_by_tid(message.from_user.id)
+        answer = message.text
+        db.delete_grades(cid,answer)
+        await message.answer('Оценки удалены!')
+    except:
+        await message.answer('Не удалось удалить оценки')
+    await state.finish()         
 
 
 @dp.message_handler(commands=['getattendencejournal'])
@@ -365,28 +418,30 @@ async def get_attendence_journal(message: Message):
         return
 
 
-@dp.message_handler(commands=['fillattendence'])
-async def fill_gradse(message: Message):
-    await message.reply("Напишите дату выставления посещаемости в формате ГГГГ-ММ-ДД")
-    await FillAttendence.fill.set()
+@dp.message_handler(commands=['updateattendence'])
+async def update_attendence(message: Message):
+    await message.reply("Напишите дату выставления посещаемости в формате ГГГГ-ММ-ДД\nУбедитесь, что вы выставили оценки за эту дату")
+    await UpdateAttendence.fill.set()
 
-
-@dp.message_handler(state=FillAttendence.fill)
-async def fill_grades1(message: Message, state: FSMContext):
+@dp.message_handler(state=UpdateAttendence.fill)
+async def update_attendence1(message: Message, state: FSMContext):
     try:
-        answer = message.text
-        df = pd.read_excel(r"Посещаемость.xlsx")
-        attendence = []
-        for i in df[answer]:
-            attendence.append(i)
         cid = db.get_cid_by_tid(message.from_user.id)
         list_of_students = db.get_list_of_students(cid)
+        answer = message.text
+        df = pd.read_excel(r"Посещаемость.xlsx")     
+        attendence = []
+        for i in df[answer]:
+            if math.isnan(i):
+                attendence.append(" ")
+            else:
+                attendence.append(i)
         for i in range(0, len(list_of_students)):
             try:
-                db.assign_attendence(list_of_students[i][0], cid, attendence[i])
+                db.assign_attendence1(list_of_students[i][0], cid, answer, attendence[i])
             except:
                 pass
         await message.answer('Посещаемость выставлена!')
     except:
-        await message.answer('Не удалось найти файл с оценками')
-    await state.finish()
+        await message.answer('Не удалось найти файл с посещаемостью')
+    await state.finish() 
