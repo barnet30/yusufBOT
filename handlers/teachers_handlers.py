@@ -120,18 +120,18 @@ async def answer_q1(message: Message, state: FSMContext):
                     stud_couple +=1
             fin_couples = max(fin_couples,stud_couple)
         if n == 0:
-            await message.answer("Нет студентов на данном курсе")
+            await message.answer("Нет студентов на данном курсе",reply_markup=ReplyKeyboardRemove())
         elif fin_couples == 0:
-            await message.answer("Занятий ещё не проводилось" +
+            await message.answer("Занятий ещё не проводилось\n" +
                                  "Средний возраст студентов: " +
-                                 str(ages_sum / n))
+                                 str(ages_sum / n),reply_markup=ReplyKeyboardRemove())
         else:
             await message.answer("Средний балл за курс: " +
                                  str(grades_sum / n) +
                                  "\nСредняя посещаемость: " +
                                  str(couples_sum / (n * fin_couples) * 100) + "%" +
                                  "\nСредний возраст студентов: " +
-                                 str(ages_sum / n))
+                                 str(ages_sum / n),reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
@@ -296,21 +296,48 @@ async def fill_grades1(message: Message, state: FSMContext):
         del df['Имя']
         del df['Группа']
         del df['Номер зачётной книжки']
+        del df['Unnamed: 0']
+        print(df.columns)
         for date in df.columns:
             grades = []
             for i in df[date]:
                 grades.append(i)
             cid = db.get_cid_by_tid(message.from_user.id)
+            cur_stud_id_in_journal = db.get_sid_from_journal(cid)
+            sids = [el[0] for el in cur_stud_id_in_journal]
             list_of_students = db.get_list_of_students(cid)
-            for i in range(0, len(list_of_students)):
-                try:
-                    if math.isnan(grades[i]):
-                        db.assign_grades(list_of_students[i][0], cid, date, 0)
+            if date in db.get_dates(cid):
+                for i in range(0, len(list_of_students)):
+                    if list_of_students[i][0] in sids:
+                        try:
+                            if math.isnan(grades[i]):
+                                db.assign_grades(list_of_students[i][0], cid, date, 0)
+                            else:
+                                db.assign_grades(list_of_students[i][0], cid, date, grades[i])
+                        except:
+                            pass
                     else:
-                        db.assign_grades(list_of_students[i][0], cid, date, grades[i])
-                except:
-                    pass
-        await message.answer('Оценки выставлены!')
+                        try:
+                            if math.isnan(grades[i]):
+                                db.add_to_journal(list_of_students[i][0], cid, date, 0,' ')
+                            else:
+                                db.add_to_journal(list_of_students[i][0], cid, date, grades[i],' ')
+                        except:
+                            pass
+            else:
+                for i in range(0, len(list_of_students)):
+                    try:
+                        if math.isnan(grades[i]):
+                            db.add_to_journal(list_of_students[i][0], cid, date, 0, ' ')
+                        else:
+                            db.add_to_journal(list_of_students[i][0], cid, date, grades[i], ' ')
+                    except:
+                        pass
+
+
+        await message.answer('Оценки выставлены!',reply_markup=ReplyKeyboardRemove())
+        await state.finish()
+        return
     except:
         await message.answer('Не удалось найти файл с оценками')
         print(traceback.format_exc())

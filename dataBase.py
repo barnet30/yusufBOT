@@ -150,9 +150,27 @@ class study:
             self.cursor.execute("delete from journal where cid={} and jdate={};".format(cid, jdate))
             self.connection.commit()
 
+    def get_dates(self,cid):
+        with self.connection:
+            self.cursor.execute("""select distinct jdate from journal where cid=%s""",(cid,))
+            ans = self.cursor.fetchall()
+            return ans
+
+    def get_sid_from_journal(self,cid):
+        with self.connection:
+            self.cursor.execute("""select distinct sid from journal where cid=%s""",(cid,))
+            ans = self.cursor.fetchall()
+            return ans
+
+    def add_to_journal(self,sid,cid,jdate,mark,att):
+        with self.connection:
+            self.cursor.execute("""insert into journal (sid,cid,jdate,mark,attendance) values(%s,%s,%s,%s,%s)""",
+                                (sid,cid,jdate,mark,att))
+            self.connection.commit()
+
     def assign_grades(self,sid, cid, jdate, grade):
         with self.connection:
-            self.cursor.execute('update journal set mark = {} where sid={} and cid={} and jdate={};'.format(grade, sid, cid, jdate))
+            self.cursor.execute('update journal set mark = %s where sid=%s and cid=%s and jdate=%s',(grade, sid, cid, jdate))
             self.connection.commit()
 
     def get_cid_by_tid(self,tid):
