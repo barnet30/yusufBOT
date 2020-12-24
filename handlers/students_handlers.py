@@ -150,7 +150,7 @@ async def answer_q1(message: Message, state: FSMContext):
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
 
-##############
+
 @dp.message_handler(commands=['getmygrades'],state=None)
 async def enter_course_stats(message:Message):
     await message.reply("По какому предмету вы хотите получить оценки?", reply_markup=course_keyboard)
@@ -166,7 +166,7 @@ async def answer_q1(message: Message, state: FSMContext):
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()
-#################
+
 
 @dp.message_handler(commands=['myinfo'])
 async def get_stud_info(message:Message):
