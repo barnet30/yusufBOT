@@ -9,6 +9,7 @@ import pandas as pd
 import math
 import traceback
 import numpy as np
+import io
 
 
 @dp.message_handler(commands=['reg_teacher'], state=None)
@@ -283,12 +284,13 @@ async def fill_grades_begin(message:Message):
 
 @dp.message_handler(state=FillGrades.fill, content_types=ContentType.DOCUMENT)
 async def fill_grades1(message: Message, state: FSMContext):
+    from urllib import request
+    import config
     try:
         file_info = await bot.get_file(message.document.file_id)
-        journal = await bot.download_file(file_info.file_path)
-        src = 'C:/Users/barnet/PycharmProjects/yusufBOT'+message.document.file_name
-        with open(src, 'wb') as new_file:
-            new_file.write(journal)
+        journal = file_info.file_path
+        file_name = message.document.file_name
+        request.urlretrieve(f'https://api.telegram.org/file/bot{config.API_TOKEN}/{journal}',f'./{file_name}')
         df = pd.read_excel(r"Журнал.xlsx")
         del df['Фамилия']
         del df['Имя']

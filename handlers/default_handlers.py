@@ -1,14 +1,19 @@
 from loader import bot,dp
 from config import admin_id
-
+from aiogram.types import Message
 
 
 async def send_to_admin(dp):
     await bot.send_message(chat_id=admin_id,text="Бот запущен!☺")
 
+@dp.message_handler(content_types=["start"])
+async def start(message:Message):
+    await message.answer("Привет, Я ЮсуфБот! Я помогаю студентам и преподавателям "
+                             "с учебным процессом ☺\n"
+                         "Для списка команд используйте команду /help")
 
 @dp.message_handler(content_types=["text"])
-async def handle_text(message):
+async def handle_text(message:Message):
 
     if "привет" in message.text.lower() or "ку" in message.text.lower():
         await message.answer("Привет, Я ЮсуфБот! Я помогаю студентам и преподавателям "
