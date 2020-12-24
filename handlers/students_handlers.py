@@ -162,10 +162,7 @@ async def answer_q1(message: Message, state: FSMContext):
     try:
         cid = db.get_id_course_by_name(course_name)
         score = db.get_grades(message.from_user.id,cid)
-        scores=[]
-        for i in score:
-            scores.append(i)
-        await message.answer("Ваши оценки по курсу: " + ' '.join(str(scores)), reply_markup=ReplyKeyboardRemove())
+        await message.answer("Ваши оценки по курсу: "+str(score), reply_markup=ReplyKeyboardRemove())
     except:
         await message.answer("Произошла непредвиденная ошибка")
     await state.finish()

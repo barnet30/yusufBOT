@@ -1,8 +1,8 @@
 from main import db
 from loader import dp, bot
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardRemove, ContentType
 from states import GetAverageValues, GetWorstStudents, GetCorrelation, RegistrationTeacher, \
-    TeacherInCourse, GetJournal, GetAttendenceJournal, FillGrades, FillAttendence
+    TeacherInCourse, GetJournal, GetAttendenceJournal, FillGrades, FillAttendence,    DeleteGrades,UpdateAttendence,ChangeGrades
 from aiogram.dispatcher import FSMContext
 from keybords_button import course_keyboard, accept_keyboard
 import pandas as pd
@@ -276,35 +276,42 @@ async def get_journal(message: Message):
         print(traceback.format_exc())
         return
 
-@dp.message_handler(commands=['fillgrades'])
-async def fill_gradse(message: Message):
-    await message.reply("Напишите дату выставления оценок в формате ГГГГ-ММ-ДД")
+@dp.message_handler(commands=['fillgrades'],state=None)
+async def fill_grades_begin(message:Message):
+    await message.answer("Прикрепите файл 'Журнал.xlsx' к своему сообщению")
     await FillGrades.fill.set()
-                         
-@dp.message_handler(state=FillGrades.fill)
+
+@dp.message_handler(state=FillGrades.fill, content_types=ContentType.DOCUMENT)
 async def fill_grades1(message: Message, state: FSMContext):
     try:
-        cid = db.get_cid_by_tid(message.from_user.id)
-        list_of_students = db.get_list_of_students(cid)
-        answer = message.text
-        for student in list_of_students:
-            db.add_couple(student[0],cid,answer)
-        df = pd.read_excel(r"Оценки.xlsx")     
-        grades = []
-        for grade in df[answer]:
-            if math.isnan(grade):
-                grades.append(0)
-            else:
-                grades.append(int(grade))
-        for i in range(0, len(list_of_students)):
-            try:
-                db.assign_grades(list_of_students[i][0], cid, answer, grades[i])
-            except:
-                pass
+        file_info = await bot.get_file(message.document.file_id)
+        journal = await bot.download_file(file_info.file_path)
+        src = 'C:/Users/barnet/PycharmProjects/yusufBOT'+message.document.file_name
+        with open(src, 'wb') as new_file:
+            new_file.write(journal)
+        df = pd.read_excel(r"Журнал.xlsx")
+        del df['Фамилия']
+        del df['Имя']
+        del df['Группа']
+        del df['Номер зачётной книжки']
+        for date in df.columns:
+            grades = []
+            for i in df[date]:
+                grades.append(i)
+            cid = db.get_cid_by_tid(message.from_user.id)
+            list_of_students = db.get_list_of_students(cid)
+            for i in range(0, len(list_of_students)):
+                try:
+                    if math.isnan(grades[i]):
+                        db.assign_grades(list_of_students[i][0], cid, date, 0)
+                    else:
+                        db.assign_grades(list_of_students[i][0], cid, date, grades[i])
+                except:
+                    pass
         await message.answer('Оценки выставлены!')
     except:
         await message.answer('Не удалось найти файл с оценками')
-    await state.finish()        
+        print(traceback.format_exc())
 
 @dp.message_handler(commands=['changegrades'])
 async def change_grades(message: Message):

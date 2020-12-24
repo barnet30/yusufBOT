@@ -52,3 +52,12 @@ class GetAttendenceJournal(StatesGroup):
 
 class FillAttendence(StatesGroup):
     fill = State()
+
+class DeleteGrades(StatesGroup):
+    delete = State()
+
+class UpdateAttendence(StatesGroup):
+    fill = State()
+
+class ChangeGrades(StatesGroup):
+    change = State()
