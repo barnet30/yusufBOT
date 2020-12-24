@@ -277,7 +277,7 @@ async def get_journal(message: Message):
 @dp.message_handler(commands=['fillgrades'])
 async def fill_grades1(message: Message, state: FSMContext):
     try:
-        df = pd.read_excel(r"Журнал.xlsx")
+        df = pd.read_excel(r"Оценки.xlsx")
         del df['Студент']
         for date in df.columns:
             grades = []
@@ -298,41 +298,69 @@ async def fill_grades1(message: Message, state: FSMContext):
         await message.answer('Не удалось найти файл с оценками')
 
 
-@dp.message_handler(commands=['getattendencejournal'], state=None)
-async def journal_attendece(message: Message):
-    await message.reply("Выберите предмет, по которому вы хотите получить журнал посещаемости",
-                        reply_markup=course_keyboard)
-    await GetAttendenceJournal.journal.set()
-
-
-@dp.message_handler(state=GetAttendenceJournal.journal)
-async def answer_q1(message: Message, state: FSMContext):
-    course_name = message.text
+@dp.message_handler(commands=['getattendencejournal'])
+async def get_attendence_journal(message: Message):
     try:
-        tid = message.from_user.id
-        cid = db.get_id_course_by_name(course_name)
-        if (db.course_check(tid, cid)):
-            list_of_students = db.get_list_of_students(cid)
-            n = len(list_of_students)
-            journal = db.get_from_journal(cid)
-            dates = []
-            for i in journal:
-                dates.append(i[2])
-            df = pd.DataFrame(columns=dates)
-            df['Студент'] = list_of_students
-            i = 0
-            for student in list_of_students:
-                df.loc[i] = db.get_attendence(student[0], cid)
-                i += 1
-            df.insert(loc=0, column='Студенты', value=list_of_students)
+        tid=message.from_user.id
+        cid=db.get_cid_by_tid(tid)
+        students = db.get_list_of_students(cid)
+        journal=db.get_from_journal(cid)
+        dates=[]
+        names=[]
+        surnames=[]
+        groups=[]
+        zach_books =[]
+        attendence = []
+        check = False
+        for i in journal:
+            dates.append(i[2])
+        for student in students:
+            attendence_stud =[]
+            names.append(student[1])
+            surnames.append(student[2])
+            groups.append(student[4])
+            zach_books.append(student[3])
+            for j in db.get_attendece(student[0],cid):
+                attendence_stud.append(j)
+            attendence.append(attendence_stud)
+            if attendence_stud:
+                check = True
+        amounts_attendence=[]
+        for a in attendence:
+            amounts_attendence.append(len(a))
+        df = pd.DataFrame({'Фамилия': surnames, 'Имя': names, 'Группа': groups, 'Номер зачётной книжки': zach_books})
+        if check:
+            max_amount_attendence = max(amounts_attendence)
+            dates = list(set(dates))
+            dates.sort()
+            for a in attendence:
+                if len(a) < max_amount_attendence:
+                    while len(a) < max_amount_attendence:
+                        a.insert(len(a), 0)
+            df_attendence = pd.DataFrame(columns=dates)
+            #print(len(grades),len(df_grades),len(df_grades.columns))
+            j = 0
+            #print(grades)
+            for col in df_attendence.columns:
+                at =[]
+                for i in range(len(students)):
+                    at.append(attendence[i][j])
+                df_attendence[col] = np.array(at)
+                #print(col)
+                j+=1
+            answer = pd.merge(df,df_attendence,left_index=True,right_index=True)
+            answer.to_excel(r"Журнал_Посещаемости.xlsx")
+
+        else:
             answer = df
             answer.to_excel(r"Журнал_Посещаемости.xlsx")
-            await message.answer
-        else:
-            await message.answer("Вы выбрали неправильный курс")
+        await message.answer(f"Журнал посещаемости для курса {db.get_name_course_by_id(cid)}",reply_markup=ReplyKeyboardRemove())
+        with open("Журнал_Посещаемости.xlsx",'rb') as file:
+            await dp.bot.send_document(message.from_user.id, file)
     except:
-        await message.answer('Произошла непредвиденная ошибка')
-    await state.finish()
+        await message.answer('Вы не являетесь администратором ни одного из курсов',reply_markup=ReplyKeyboardRemove())
+        print(traceback.format_exc())
+        return
 
 
 @dp.message_handler(commands=['fillattendence'])
@@ -345,7 +373,7 @@ async def fill_gradse(message: Message):
 async def fill_grades1(message: Message, state: FSMContext):
     try:
         answer = message.text
-        df = pd.read_excel(r"Журнал_Посещаемости.xlsx")
+        df = pd.read_excel(r"Посещаемость.xlsx")
         attendence = []
         for i in df[answer]:
             attendence.append(i)
