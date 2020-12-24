@@ -138,6 +138,17 @@ class study:
             self.cursor.execute('select * from journal where cid = %s and sid in (select student_id from student_course where course_id = %s)',(cid,cid))
             answer = self.cursor.fetchall()
             return answer
+    
+    def add_couple(self, sid, cid, jdate):
+        with self.connection:
+            self.cursor.execute("insert into journal(sid, cid, jdate, mark, attendence) values ({journal[0]!r}, {journal[1]!r}, {journal[2]!r}, 0, " ")".format(
+            journal=[sid, cid, jdate]))
+            self.connection.commit()
+    
+    def delete_grades(self,cid,jdate):
+        with self.connection:
+            self.cursor.execute("delete from journal where cid={} and jdate={};".format(cid, jdate))
+            self.connection.commit()
 
     def assign_grades(self,sid, cid, jdate, grade):
         with self.connection:
@@ -161,6 +172,11 @@ class study:
                     'update journal set attendance = %s where sid = %s and cid=%s',
                     (attendence[0], list_of_students[i], cid))
                 self.connection.commit()
+    
+    def assign_attendence1(self,sid, cid, jdate, attendence):
+        with self.connection:
+            self.cursor.execute('update journal set attendance = {} where sid={} and cid={} and jdate={};'.format(attendence, sid, cid, jdate))
+            self.connection.commit()
 
     def course_check(self,tid,cid):
         with self.connection:
